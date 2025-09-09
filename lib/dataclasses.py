@@ -1,7 +1,8 @@
 '''
 =======================================================================================================================
 Name:           Dataclasses for Multispectral camera model
-description:    dataclasses used for modeling multispectral camera modeling
+Description:    Dataclasses used for modeling multispectral camera modeling
+Author:         Tomas Vacek
 =======================================================================================================================
 '''
 
@@ -11,8 +12,7 @@ import numpy as np
 import pandas as pd
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
-from lib.spectral_scripts import get_mean_spectrum_of_area
-from lib.errors import ImgDataIncompatibleError
+from lib.errors import ImgDataIncompatible
 
 
 @dataclass
@@ -30,7 +30,7 @@ class ImageData:
         """
 
         if not self.num_of_bands == other.num_of_bands and not self.band_centres == other.band_centres:
-            raise ImgDataIncompatibleError
+            raise ImgDataIncompatible("ImageData objects used for addition are not compatible with each other")
 
         return ImageData(self.img_data + other.img_data, self.band_centres,
                          self.num_of_bands)
@@ -39,7 +39,8 @@ class ImageData:
         """ View image as an RGB - get three bands from usable part of spectrum (start, middle, end) """
 
         non_empty_bands = self.img_data[(ceil(self.img_data.shape[0] / 2)),
-                                        (ceil(self.img_data.shape[1] /2)), :] > 1e-2
+                                        (ceil(self.img_data.shape[1] /
+                                              2)), :] > 1e-2
         bands = [i for i, x in enumerate(non_empty_bands) if x]
 
         plot_band_list = [bands[0], bands[ceil(len(bands) / 2)], bands[-1]]
@@ -69,13 +70,50 @@ class ImageData:
                            pixels_per_dimension: int = 5) -> None:
         """ Plot spectrum of pixels """
 
-        area_data = get_mean_spectrum_of_area(self.img_data,
-                                              top_right_coordinate,
-                                              pixels_per_dimension)
+        area_data = self.get_mean_spectrum_of_area(top_right_coordinate,
+                                                   pixels_per_dimension)
         plt.plot(self.band_centres, area_data, label="Spectral response")
         plt.xlabel("Band")
         plt.ylabel("Reflectance")
         plt.show()
+
+    # Got this from Gemini
+    def vector_normalize(self) -> None:
+        """ Normalize img data """
+        # Reshape the image data to a 2D array (pixels x bands)
+        pixels = self.img_data.reshape(-1, self.img_data.shape[2])
+
+        # Calculate the Euclidean norm (vector length) for each pixel's spectrum
+        # The norm is the square root of the sum of the squares of all band values.
+        norms = np.linalg.norm(pixels, axis=1)
+
+        # Avoid division by zero for pixels with a norm of 0
+        norms[norms == 0] = 1e-10
+
+        # Divide each pixel's spectrum by its norm
+        normalized_pixels = pixels / norms[:, np.newaxis]
+
+        # Reshape the data back to the original image shape
+        self.img_data = normalized_pixels.reshape(self.img_data.shape)
+
+    def get_mean_spectrum_of_area(
+            self,
+            corner_coords: list[int] = [946, 349],
+            pixels_per_dimension: int = 5) -> list[np.float64] | None:
+        """ Get mean spectrum of a selected square area
+
+        :param img: image data
+        :param square_corner_coordinates: coordinates of an upper left corner of the square area
+        :param pixels_per_dimension: number of pixels per dimension
+        """
+
+        pixel_spectrum = self.img_data[corner_coords[0]:corner_coords[0] +
+                                       pixels_per_dimension,
+                                       corner_coords[1]:corner_coords[1] +
+                                       pixels_per_dimension, :]
+        mean_spectrum = pixel_spectrum.mean(axis=(0, 1))
+
+        return list(mean_spectrum)
 
 
 @dataclass

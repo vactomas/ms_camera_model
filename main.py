@@ -3,6 +3,7 @@
 Name:           Multispectral camera simulation model
 Description:    Simulated model of a multispectral camera. Takes in hyperspectral data and colour filter specs. Outputs
                 multispectral data
+Author:         Tomas Vacek
 =======================================================================================================================
 '''
 
@@ -10,7 +11,6 @@ from __future__ import annotations
 import numpy as np
 import spectral
 
-from lib.spectral_scripts import vector_normalize
 from lib.dataclasses import ImageData, FilterSpecs
 
 
@@ -38,8 +38,9 @@ class MultispectralCameraModel:
         """
 
         img = spectral.open_image(filename)
-        return ImageData(vector_normalize(img.load()), img.bands.centers,
-                         img.nbands)
+        img_data = ImageData(img.load(), img.bands.centers, img.nbands)
+        img_data.vector_normalize()
+        return img_data
 
     def extract_img_data(self) -> ImageData:
         """ Extract image data based on filters from hyperspectral data """

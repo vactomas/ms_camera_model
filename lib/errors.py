@@ -2,10 +2,10 @@
 =======================================================================================================================
 Name:           Custom errors for Multispectral camera simulation model
 Description:    Custom error definitions to improve readability and make debugging easier
+Author:         Tomas Vacek
 =======================================================================================================================
 '''
 
 
-class ImgDataIncompatibleError(Exception):
-    """ Multispectral Image Data incompatible error """
-    pass
+class ImgDataIncompatible(Exception):
+    """ Image Data isn't incompatible """
