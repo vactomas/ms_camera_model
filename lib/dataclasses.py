@@ -1,8 +1,8 @@
 '''
 =======================================================================================================================
-Name:           Dataclasses for Multispectral camera model
-Description:    Dataclasses used for modeling multispectral camera modeling
-Author:         Tomas Vacek
+- Name:         Dataclasses for Multispectral camera model
+- Description:  Dataclasses used for modeling multispectral camera modeling
+- Author:       Tomas Vacek
 =======================================================================================================================
 '''
 
@@ -132,3 +132,38 @@ class FilterSpecs:
         """
         excel_data = pd.read_excel(filename)
         self.filter_transmission = np.array(excel_data)
+
+
+@dataclass
+class SensorSpecs:
+    """ Sensor specification """
+    sensor_qe_curve: np.ndarray
+    name: str = "Generic"
+    supplier: str = "Generic"
+    sensor_type: str = "CMOS"
+
+
+@dataclass
+class FilterSensorUnit:
+    """ Combination of filter and sensor """
+    filter_spec: FilterSpecs
+    sensor_spec: SensorSpecs
+    combined_attentuation: np.ndarray
+
+    def load_filter_sensor(self, filename_filter: str, filename_sensor: str) -> None:
+        """ Load filter transmission and sensor spectral sensitivity from a file
+
+        :param filename_filter: Filename or path to the filter xlsx file
+        :param filename_sensor: Filename or path to the sensor xlsx file
+        """
+
+        filter_data = pd.read_excel(filename_filter)
+        sensor_data = pd.read_excel(filename_sensor)
+
+        self.filter_spec.filter_transmission = np.array(filter_data)
+        self.sensor_spec.sensor_qe_curve = np.array(sensor_data)
+
+    def calculate_combined_attentuation(self) -> None:
+        """ Calculate combined attentuation of filter and sensor based on their transmission and qe curve """
+
+        self.combined_attentuation = self.filter_spec.filter_transmission[:, 1] * self.sensor_spec.sensor_qe_curve[:, 1]
