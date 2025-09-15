@@ -5,10 +5,9 @@
 
 ```
 from main import *
-import numpy as np
+from lib.dataclasses import *
 
-f1 = FilterSpecs(filter_transmission=np.array([]))
-f1.import_filter_specs('path_to_xlsx_file')
+fs_unit = FilterSensorUnit(FilterSpecs(np.array([])), SensorSpecs(np.array([])), np.array([]))
 
-ms_model = MultispectralCameraModel([f1], 'path_to_hs_image_hdr_file')
+ms_model = MultispectralCameraModel([fs_unit], 'path_to_hs_image_hdr_file')
 ```
