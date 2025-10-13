@@ -36,7 +36,6 @@ class MultispectralCameraModel:
 
         :param filename:    Filename of the hyperspectral image file
         """
-
         img = spectral.open_image(filename)
         img_data = ImageData(img.load(), img.bands.centers, img.nbands)
         img_data.vector_normalize()
@@ -45,14 +44,25 @@ class MultispectralCameraModel:
     def extract_img_data(self) -> ImageData:
         """ Extract image data based on filters from hyperspectral data """
 
-        ms_img_data = np.zeros_like(self.hs_img_data.img_data)
+        shape = self.hs_img_data.img_data.shape
+        ms_img_data = np.zeros((shape[0], shape[1], len(self.filters_sensors)))
+        filter_sensor_unit_num = 0
 
         for filter_sensor_unit in self.filters_sensors:
-            filter_sensor_unit.calculate_combined_attentuation()
-            ms_img_data += self.hs_img_data.img_data * filter_sensor_unit.combined_attentuation
+            filter_sensor_unit.calculate_combined_attenuation()
+            ms_img_data[:, :, filter_sensor_unit_num] = self.calculate_output_of_filter_sensor_unit(filter_sensor_unit)
+            filter_sensor_unit_num += 1
 
         return ImageData(ms_img_data, self.hs_img_data.band_centres,
                          self.hs_img_data.num_of_bands)
+
+    def calculate_output_of_filter_sensor_unit(self, filter_sensor_unit: FilterSensorUnit) -> np.ndarray:
+        """ Calculate the image created by a filter sensor unit """
+
+        data_through_unit = self.hs_img_data.img_data * filter_sensor_unit.combined_attenuation
+        output_image = np.trapezoid(data_through_unit, axis=2)
+
+        return output_image
 
     def filter_sensor_img_data_matching(
             self, filters_sensors: list[FilterSensorUnit]) -> list[FilterSensorUnit]:
