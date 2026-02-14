@@ -35,15 +35,20 @@ ms_paths = ["../img_data/sumavska/0005SET/000/IMG_0034_1.tif", "../img_data/suma
 # masks_path_src = [None, None, None, None]
 masks_path_src = ["../img_data/sumavska/0005SET/000/mask_ms.tif", "../img_data/sumavska/0005SET/000/mask_ms.tif", "../img_data/sumavska/0005SET/000/mask_ms.tif", "../img_data/sumavska/0005SET/000/mask_ms.tif"]
 masks_path_ref = [None, None, None, None]
-filter_paths = ["../filters_sensors/filter_mica_475_32.xlsx", "../filters_sensors/filter_mica_560_27.xlsx", "../filters_sensors/filter_mica_668_16.xlsx", "../filters_sensors/filter_mica_717_12.xlsx"]
+# filter_paths = ["../filters_sensors/filter_mica_475_32.xlsx", "../filters_sensors/filter_mica_560_27.xlsx", "../filters_sensors/filter_mica_668_16.xlsx", "../filters_sensors/filter_mica_717_12.xlsx"]
+filter_paths = ["../filters_sensors/AltumPT_Blue_RSR.xlsx", "../filters_sensors/AltumPT_Green_RSR.xlsx", "../filters_sensors/AltumPT_Red_RSR.xlsx", "../filters_sensors/AltumPT_Red_Edge_RSR.xlsx"]
 sensor_paths = ["../filters_sensors/multispectral_sensor_mock.xlsx", "../filters_sensors/multispectral_sensor_mock.xlsx", "../filters_sensors/multispectral_sensor_mock.xlsx", "../filters_sensors/multispectral_sensor_mock.xlsx", "../filters_sensors/multispectral_sensor_mock.xlsx"]
 
 hs_data = HyperspectralImageData()
 hs_data.import_hs_img(hs_path)
+hs_data.normalize_img_data()
+# hs_data.vector_normalize()
 hs_data.band_centers = spectral.open_image("../img_data/NewData/plastak_1020-0252.hdr").bands.centers
 
 ms_data = MultispectralImageData()
 ms_data.import_ms_imgs(ms_paths)
+ms_data.normalize_img_data()
+# ms_data.vector_normalize()
 
 logging.info(f"[MAIN] MS data type: {ms_data.img_data.dtype}")
 logging.info(f"[MAIN] HS data type: {hs_data.img_data.dtype}")
@@ -74,6 +79,7 @@ logging.info(f"[MAIN] Modeled MS data max value: {ms_cam_model.out_data.img_data
 # registered_real_ms_data.imshow([2, 1, 0])
 
 data_comparator = DataComparator(ms_data, ms_cam_model.out_data)
+logging.info(f"[NOTE] If you haven't changed the data source, it is (400, 820, 20) for all modeled and for real ms (970, 850, 20), (990, 820, 20), (1000, 830, 20), (990, 830, 20)")
 real_ratios, modeled_ratios = data_comparator.compare_band_ratios(set_areas_globaly = False)
 
 w, x = 0.4, np.arange(len(real_ratios))

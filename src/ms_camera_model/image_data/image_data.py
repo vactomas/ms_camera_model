@@ -144,7 +144,7 @@ class ImageData:
         normalized_pixels = pixels / norms[:, np.newaxis]
         self.img_data = normalized_pixels.reshape(self.img_data.shape)
 
-        logger.info("[ImageData] Vector nomralization completed")
+        logger.info("[ImageData] Vector normalization completed")
 
     def mean_spectrum_area(
             self,
@@ -301,6 +301,13 @@ class ImageData:
         except Exception as ex:
             logger.critical(f"[ImageData] Warping perspective for band {i_band} failed: {ex}")
             return None
+    
+    def normalize_img_data(self) -> None:
+        """ Normalize image data """
+
+        max_value = np.max(self.img_data)
+
+        self.img_data = self.img_data / max_value
 
 
 @dataclass
@@ -343,11 +350,6 @@ class MultispectralImageData(ImageData):
         self.nbands = num_of_images
 
         logger.info("[ImageData] Import of multispectral images completed")
-
-    # def normalize_ms_data(self) -> None:
-    #     """ Normalize multispectral data """
-    #
-    #     self.img_data.
 
 
 @dataclass
