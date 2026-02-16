@@ -317,6 +317,76 @@ class MultispectralImageData(ImageData):
     :method load_ms_imgs: Load multispectral image data into img_data as np.ndarray
     """
 
+    def import_altum_pt_ms_imgs(self, filepaths: list[str], panel_calibration: dict[(str, float)], panel_location: list[list[int]] = None) -> None:
+        """ Import and pre-process Altum PT images 
+
+        :param filepaths: list of filepaths to the multispectral images, their order determines order in the final array
+        :param panel_calibration: panel_calibration data of used CRP panel
+        :param panel_location: panel_location information format [[ulx, uly, lrx, lry], [ulx, ...]]
+        :raises NoProvidedFilepaths: when the filepaths param is empty
+        """
+
+        import micasense.utils as msutils
+        import micasense.plotutils as plotutils
+        import micasense.metadata as metadata
+        
+        logger.info(f"[ImageData] Beginning import of multispectral images...")
+
+        if not isinstance(filepaths, list):
+            raise TypeError("Error. This function requires a list of paths.")
+        
+        if not all(isinstance(item, str) for item in filepaths):
+            raise TypeError("Error. Some provided paths aren't strings.")
+
+        num_of_images = len(filepaths)
+
+        if num_of_images == 0:
+            raise NoProvidedFilepaths
+
+        plt.ion()
+
+        for i_img in range(num_of_images):
+            logger.info(f"[ImageData] Importing MicaSense multispectral image {filepaths[i_img]}...")
+
+            img_raw = cv.imread(filepaths[i_img], cv.IMREAD_UNCHANGED)
+            meta = metadata.Metadata(filepaths[i_img])
+
+            radiance_img, *_ = msutils.raw_image_to_radiance(meta, img_raw)
+
+            if panel_location is not None:
+                coordinates = panel_location[i_img]
+                ulx = coordinates[0]
+                uly = coordinates[1]
+                lrx = coordinates[2]
+                lry = coordinates[3]
+
+            else:
+                plotutils.plotwithcolorbar(radiance_img)
+                
+                ulx = int(input("Upper left column (x coordinate) of panel area: "))
+                uly = int(input("Upper left row (y coordinate) of panel area: "))
+                lrx = int(input("Lower right column (x coordinate) of panel area: "))
+                lry = int(input("Lower right row (y coordinate) of panel area: "))
+
+            panel_region = radiance_img[uly:lry, ulx:lrx]
+            mean_radiance = panel_region.mean()
+            band_name = meta.get_item('XMP:BandName')
+            panel_reflectance = panel_calibration[band_name]
+            radiance_to_reflectance = panel_reflectance / mean_radiance
+
+            reflectance_img = radiance_img * radiance_to_reflectance
+
+            if i_img == 0:
+                self.img_data = np.zeros((img_raw.shape[0], img_raw.shape[1], num_of_images))
+
+            self.img_data[:, :, i_img] = img_as_float(reflectance_img)
+
+        self.nbands = num_of_images
+
+        plt.ioff()
+
+        logger.info("[ImageData] Import of MicaSense multispectral images completed")
+
     def import_ms_imgs(self, filepaths: list[str]) -> None:
         """ Import multispectral images as a np.ndarray 
 
