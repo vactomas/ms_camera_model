@@ -121,7 +121,7 @@ class MultispectralCameraModel:
         logger.info(f"[MSModel] Max integrated val: {out_img.max()}")
         logger.info(f"[MSModel] Data type: {out_img.dtype}")
 
-        out_img = out_img / data_through_unit.shape[2]
+        # out_img = out_img / data_through_unit.shape[2]
 
         logger.info(f"[MSModel] Max out_img val: {out_img.max()}")
         logger.info(f"[MSModel] Data type: {out_img.dtype}")
