@@ -43,10 +43,6 @@ class FilterSensorUnit:
     sensor_spec: SensorSpecs
     combined_attenuation: np.ndarray = field(init=False)
 
-    def __post_init__(self) -> None:
-        """ Calculate combined_attenuation on init """
-        self._calculate_combined_attenuation()
-
     @classmethod
     def from_excel(cls, filename_filter: str, filename_sensor: str) -> FilterSensorUnit:
         """ Load filter transmission and sensor spectral sensitivity from Excel file
@@ -67,7 +63,7 @@ class FilterSensorUnit:
 
         return FilterSensorUnit(filter_spec, sensor_spec)
 
-    def _calculate_combined_attenuation(self) -> None:
+    def calculate_combined_attenuation(self) -> None:
         """ Calculate combined attenuation of filter and sensor based on their transmission and qe (quantum efficiency) curve """
 
         logger.info("[FilterSensorUnit] Calculating combined attenuation")

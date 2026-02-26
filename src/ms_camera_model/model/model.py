@@ -59,6 +59,7 @@ class MultispectralCameraModel:
         modeled_ms_data_band_centers = []
 
         for i_unit, unit in enumerate(self.corrected_filter_sensor_units):
+            unit.calculate_combined_attenuation()
             logger.info(f"[MSModel] FS_{i_unit} max combined attenuation is {unit.combined_attenuation.max()}")
             modeled_ms_data[:, :, i_unit] = self._calculate_band(unit)
             modeled_ms_data_band_centers.append(unit.filter_spec.band_center)
