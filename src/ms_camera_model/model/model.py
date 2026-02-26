@@ -14,11 +14,11 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-logger = logging.getLogger(__name__)
-
 from ms_camera_model.errors import NoImageData
 from ms_camera_model.filter_sensor import FilterSensorUnit
 from ms_camera_model.image_data import HyperspectralImageData, ImageData
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass

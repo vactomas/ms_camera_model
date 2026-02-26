@@ -6,15 +6,14 @@
 =======================================================================================================================
 '''
 
-from ms_camera_model.image_data import ImageData
-
-import numpy as np
-
 import logging
 
-logger = logging.getLogger(__name__)
-
 import matplotlib.pyplot as plt
+import numpy as np
+
+from ms_camera_model.image_data import ImageData
+
+logger = logging.getLogger(__name__)
 
 
 class DataComparator:

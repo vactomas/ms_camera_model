@@ -21,3 +21,7 @@ class NoProvidedFilepaths(Exception):
 
 class NoImageData(Exception):
     """ Provided ImageData instance doesn't contain img_data """
+
+
+class NoProvidedArea(Exception):
+    """ No area was provided """
