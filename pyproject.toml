@@ -31,5 +31,13 @@ keywords = ["multispectral", "hyperspectral", "model"]
 "Changelog" = ""
 
 [tool.ruff]
-line-length = 120
-select = ["E", "F", "I"]
+select = ["E", "F", "I", "B"] 
+ignore = []
+
+[tool.ruff.format]
+quote-style = "preserve"
+indent-style = "space"
+
+[tool.yapf]
+based_on_style = "google"
+column_limit = 120
