@@ -6,8 +6,6 @@
 =======================================================================================================================
 '''
 
-__all__ = [
-    "DataComparator"
-]
+__all__ = ["DataComparator"]
 
 from ms_camera_model.data_comparison.data_comparison import DataComparator

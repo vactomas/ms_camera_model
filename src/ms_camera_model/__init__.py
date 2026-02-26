@@ -10,14 +10,8 @@
 __version__ = "0.1.0"
 
 __all__ = [
-    "MultispectralCameraModel",
-    "ImageData",
-    "HyperspectralImageData",
-    "MultispectralImageData",
-    "FilterSpecs",
-    "SensorSpecs",
-    "FilterSensorUnit",
-    "DataComparator"
+    "MultispectralCameraModel", "ImageData", "HyperspectralImageData", "MultispectralImageData", "FilterSpecs",
+    "SensorSpecs", "FilterSensorUnit", "DataComparator"
 ]
 
 from ms_camera_model.model import MultispectralCameraModel

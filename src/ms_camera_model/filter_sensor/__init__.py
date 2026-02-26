@@ -6,11 +6,7 @@
 =======================================================================================================================
 '''
 
-__all__ = [
-    "FilterSensorUnit",
-    "FilterSpecs",
-    "SensorSpecs"
-]
+__all__ = ["FilterSensorUnit", "FilterSpecs", "SensorSpecs"]
 
 from ms_camera_model.filter_sensor.filter_sensor import FilterSensorUnit
 from ms_camera_model.filter_sensor.filter_sensor import FilterSpecs

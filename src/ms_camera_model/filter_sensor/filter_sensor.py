@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
@@ -39,13 +39,17 @@ class SensorSpecs:
 @dataclass
 class FilterSensorUnit:
     """ Combination of filter and sensor """
-    filter_spec: FilterSpecs | None = None
-    sensor_spec: SensorSpecs | None = None
-    combined_attenuation: np.ndarray | None = None
+    filter_spec: FilterSpecs
+    sensor_spec: SensorSpecs
+    combined_attenuation: np.ndarray = field(init=False)
 
-    def load_filter_sensor(self, filename_filter: str,
-                           filename_sensor: str) -> None:
-        """ Load filter transmission and sensor spectral sensitivity from a file
+    def __post_init__(self) -> None:
+        """ Calculate combined_attenuation on init """
+        self._calculate_combined_attenuation()
+
+    @classmethod
+    def from_excel(cls, filename_filter: str, filename_sensor: str) -> FilterSensorUnit:
+        """ Load filter transmission and sensor spectral sensitivity from Excel file
 
         :param filename_filter: Filename or path to the filter xlsx file
         :param filename_sensor: Filename or path to the sensor xlsx file
@@ -58,10 +62,12 @@ class FilterSensorUnit:
         filter_data = pd.read_excel(filename_filter)
         sensor_data = pd.read_excel(filename_sensor)
 
-        self.filter_spec = FilterSpecs(np.array(filter_data))
-        self.sensor_spec = SensorSpecs(np.array(sensor_data))
+        filter_spec = FilterSpecs(np.array(filter_data))
+        sensor_spec = SensorSpecs(np.array(sensor_data))
 
-    def calculate_combined_attenuation(self) -> None:
+        return FilterSensorUnit(filter_spec, sensor_spec)
+
+    def _calculate_combined_attenuation(self) -> None:
         """ Calculate combined attenuation of filter and sensor based on their transmission and qe (quantum efficiency) curve """
 
         logger.info("[FilterSensorUnit] Calculating combined attenuation")
@@ -69,37 +75,34 @@ class FilterSensorUnit:
             f"[FilterSensorUnit] Filter transmission: {self.filter_spec.filter_transmission.shape}, Sensor QE curve: {self.sensor_spec.sensor_qe_curve.shape}"
         )
 
-        self.combined_attenuation = self.filter_spec.filter_transmission[:,
-                                                                         1] * self.sensor_spec.sensor_qe_curve[:,
-                                                                                                               1]
+        transmission = self.filter_spec.filter_transmission[:, 1]
+        sensor_qe = self.sensor_spec.sensor_qe_curve[:, 1]
 
-        logger.info(
-            f"[FilterSensorUnit] Combined attenuation: {self.combined_attenuation.shape}"
-        )
+        self.combined_attenuation = transmission * sensor_qe
 
-    def interpolate_to_hs_data(
-            self, hs_band_centers: list[float] | None) -> FilterSensorUnit:
+        logger.info(f"[FilterSensorUnit] Combined attenuation: {self.combined_attenuation.shape}")
+
+    def interpolate_to_hs_data(self, hs_band_centers: list[float] | None) -> FilterSensorUnit:
         """ Interpolate the provided filter and sensor data to hyperspectral data """
 
-        if hs_band_centers is None:
-            raise ValueError(f"Missing band center data for interpolation")
+        logger.info("[FilterSensorUnit] Beginning FilterSensorUnit interpolation...")
 
-        filter_interp = np.interp(hs_band_centers,
-                                  self.filter_spec.transmission[:, 0],
-                                  self.filter_spec.transmission[:, 1])
-        sensor_interp = np.interp(hs_band_centers,
-                                  self.sensor_spec.sensor_qe_curve[:, 0],
+        if hs_band_centers is None:
+            raise ValueError("Missing band center data for interpolation")
+
+        filter_interp = np.interp(hs_band_centers, self.filter_spec.filter_transmission[:, 0],
+                                  self.filter_spec.filter_transmission[:, 1])
+        sensor_interp = np.interp(hs_band_centers, self.sensor_spec.sensor_qe_curve[:, 0],
                                   self.sensor_spec.sensor_qe_curve[:, 1])
 
-        interpolated_filter = FilterSpecs(
-            np.column_stack([hs_band_centers, filter_interp]),
-            self.filter_spec.name, self.filter_spec.supplier,
-            self.filter_spec.band_center, self.filter_spec.band_width)
+        logger.info(f"[FilterSensorUnit] Filter interp {filter_interp.shape}")
+        logger.info(f"[FilterSensorUnit] Sensor interp {sensor_interp.shape}")
 
-        interpolated_sensor = SensorSpecs(
-            np.column_stack([hs_band_centers,
-                             sensor_interp]), self.sensor_spec.name,
-            self.sensor_spec.supplier, self.sensor_spec.sensor_type)
+        interpolated_filter = FilterSpecs(np.column_stack([hs_band_centers, filter_interp]), self.filter_spec.name,
+                                          self.filter_spec.supplier, self.filter_spec.band_center,
+                                          self.filter_spec.band_width)
 
-        return FilterSensorUnit(interpolated_filter, interpolated_sensor,
-                                np.array([]))
+        interpolated_sensor = SensorSpecs(np.column_stack([hs_band_centers, sensor_interp]), self.sensor_spec.name,
+                                          self.sensor_spec.supplier, self.sensor_spec.sensor_type)
+
+        return FilterSensorUnit(interpolated_filter, interpolated_sensor)

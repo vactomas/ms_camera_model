@@ -11,15 +11,16 @@ from ms_camera_model.image_data import ImageData
 import numpy as np
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 import matplotlib.pyplot as plt
 
 
 class DataComparator:
-    
+
     def __init__(self, ms_img_data: ImageData, modeled_img_data: ImageData) -> None:
-        
+
         self.ms_img_data: ImageData = ms_img_data
         self.modeled_img_data: ImageData = modeled_img_data
 
@@ -40,14 +41,20 @@ class DataComparator:
             logging.info(f"[DataComparator] {self.ms_img_data.img_data.shape}")
             logging.info(f"[DataComparator] {self.modeled_img_data.img_data.shape}")
 
-            real_ms_square_mean = self._find_mean_value_for_square(self.ms_img_data.img_data, y_coordinate, x_coordinate, square_size)
-            modeled_ms_square_mean = self._find_mean_value_for_square(self.modeled_img_data.img_data, y_coordinate, x_coordinate, square_size)
+            real_ms_square_mean = self._find_mean_value_for_square(self.ms_img_data.img_data, y_coordinate,
+                                                                   x_coordinate, square_size)
+            modeled_ms_square_mean = self._find_mean_value_for_square(self.modeled_img_data.img_data, y_coordinate,
+                                                                      x_coordinate, square_size)
 
             real_ms_ratios = real_ms_square_mean / np.sum(real_ms_square_mean)
             modeled_ms_ratios = modeled_ms_square_mean / np.sum(modeled_ms_square_mean)
 
-            logging.info(f"[DataComparator] SQR_mean: {real_ms_square_mean}, SUM: {np.sum(real_ms_square_mean)}, ratios: {real_ms_ratios}")
-            logging.info(f"[DataComparator] SQR_mean: {modeled_ms_square_mean}, SUM: {np.sum(modeled_ms_square_mean)}, ratios: {modeled_ms_ratios}")
+            logging.info(
+                f"[DataComparator] SQR_mean: {real_ms_square_mean}, SUM: {np.sum(real_ms_square_mean)}, ratios: {real_ms_ratios}"
+            )
+            logging.info(
+                f"[DataComparator] SQR_mean: {modeled_ms_square_mean}, SUM: {np.sum(modeled_ms_square_mean)}, ratios: {modeled_ms_ratios}"
+            )
 
             return [real_ms_ratios, modeled_ms_ratios]
 
@@ -69,7 +76,11 @@ class DataComparator:
                     y_coordinate = int(input("Type in y coordinate of upper left square corner: ").strip())
                     square_size = int(input("Type in edge size (defaults to 10): ") or "10")
 
-                    real_ms_square_mean[band] = self._find_mean_value_for_square(self.ms_img_data.img_data[:, :, band], y_coordinate, x_coordinate, square_size, single_band=True)
+                    real_ms_square_mean[band] = self._find_mean_value_for_square(self.ms_img_data.img_data[:, :, band],
+                                                                                 y_coordinate,
+                                                                                 x_coordinate,
+                                                                                 square_size,
+                                                                                 single_band=True)
 
                     self.modeled_img_data.imshow([band])
 
@@ -77,29 +88,36 @@ class DataComparator:
                     y_coordinate = int(input("Type in y coordinate of upper left square corner: ").strip())
                     square_size = int(input("Type in edge size (defaults to 10): ") or "10")
 
-                    modeled_ms_square_mean[band] = self._find_mean_value_for_square(self.modeled_img_data.img_data[:, :, band], y_coordinate, x_coordinate, square_size, single_band=True)
+                    modeled_ms_square_mean[band] = self._find_mean_value_for_square(
+                        self.modeled_img_data.img_data[:, :, band],
+                        y_coordinate,
+                        x_coordinate,
+                        square_size,
+                        single_band=True)
 
                 plt.ioff()
-                
+
                 real_ms_ratios = real_ms_square_mean / np.sum(real_ms_square_mean)
                 modeled_ms_ratios = modeled_ms_square_mean / np.sum(modeled_ms_square_mean)
 
-                logging.info(f"[DataComparator] SQR_mean: {real_ms_square_mean}, SUM: {np.sum(real_ms_square_mean)}, ratios: {real_ms_ratios}")
-                logging.info(f"[DataComparator] SQR_mean: {modeled_ms_square_mean}, SUM: {np.sum(modeled_ms_square_mean)}, ratios: {modeled_ms_ratios}")
+                logging.info(
+                    f"[DataComparator] SQR_mean: {real_ms_square_mean}, SUM: {np.sum(real_ms_square_mean)}, ratios: {real_ms_ratios}"
+                )
+                logging.info(
+                    f"[DataComparator] SQR_mean: {modeled_ms_square_mean}, SUM: {np.sum(modeled_ms_square_mean)}, ratios: {modeled_ms_ratios}"
+                )
 
                 return [real_ms_ratios, modeled_ms_ratios]
 
             else:
                 raise ImageDataIncompatible
 
-
     @staticmethod
-    def _find_mean_value_for_square(
-            img_data_array: np.ndarray,
-            x_coordinate: int, 
-            y_coordinate: int,
-            square_size: int,
-            single_band: bool = False) -> np.ndarray:
+    def _find_mean_value_for_square(img_data_array: np.ndarray,
+                                    x_coordinate: int,
+                                    y_coordinate: int,
+                                    square_size: int,
+                                    single_band: bool = False) -> np.ndarray:
         """ Find mean value for a selected square 
 
         x_coordinate
@@ -111,16 +129,14 @@ class DataComparator:
         if single_band:
 
             values_of_selected_pixels = img_data_array[
-                                            x_coordinate:x_coordinate+square_size,
-                                            y_coordinate:y_coordinate+square_size,
-                                        ]
+                x_coordinate:x_coordinate + square_size,
+                y_coordinate:y_coordinate + square_size,
+            ]
 
         else:
-            values_of_selected_pixels = img_data_array[
-                                            x_coordinate:x_coordinate+square_size,
-                                            y_coordinate:y_coordinate+square_size,
-                                            :]
-       
+            values_of_selected_pixels = img_data_array[x_coordinate:x_coordinate + square_size,
+                                                       y_coordinate:y_coordinate + square_size, :]
+
         mean_values = values_of_selected_pixels.mean(axis=(0, 1))
 
         return mean_values

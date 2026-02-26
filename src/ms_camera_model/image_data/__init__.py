@@ -6,11 +6,7 @@
 =======================================================================================================================
 '''
 
-__all__ = [
-    "ImageData",
-    "MultispectralImageData",
-    "HyperspectralImageData"
-]
+__all__ = ["ImageData", "MultispectralImageData", "HyperspectralImageData"]
 
 from ms_camera_model.image_data.image_data import ImageData
 from ms_camera_model.image_data.image_data import MultispectralImageData

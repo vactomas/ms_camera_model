@@ -19,6 +19,7 @@ from skimage import img_as_float
 from ms_camera_model.errors import ImageDataIncompatible, NoProvidedFilepaths, IncompatibleBandChoice, NoImageData
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -56,8 +57,7 @@ class ImageData:
         if not self.nbands == other.nbands and not self.band_centers == other.band_centers:
             raise ImageDataIncompatible("ImageData objects used for addition are not compatible with each other")
 
-        return ImageData(self.img_data + other.img_data, self.band_centers,
-                         self.nbands)
+        return ImageData(self.img_data + other.img_data, self.band_centers, self.nbands)
 
     def imshow(self, bands: list[int] = []) -> None:
         """ View image as an RGB interpretation of selected bands or as a brightness plot
@@ -67,8 +67,9 @@ class ImageData:
         """
 
         if len(bands) == 3:
-            logger.info(f"[ImageData] Showing RGB interpretation from bands -> R:{bands[0]}, G:{bands[1]}, B:{bands[2]}")
-            
+            logger.info(
+                f"[ImageData] Showing RGB interpretation from bands -> R:{bands[0]}, G:{bands[1]}, B:{bands[2]}")
+
             plot_band_list = [bands[0], bands[1], bands[2]]
             plot_data = self.img_data[:, :, (plot_band_list)]
 
@@ -81,7 +82,7 @@ class ImageData:
 
         elif len(bands) == 1:
             logger.info(f"[ImageData] Showing band -> {bands[0]}")
-            
+
             plot_band_list = [bands[0]]
             plot_data = self.img_data[:, :, (plot_band_list)]
 
@@ -94,8 +95,7 @@ class ImageData:
             logger.info("[ImageData] Showing image as a brightness plot")
 
             non_empty_bands = self.img_data[(ceil(self.img_data.shape[0] / 2)),
-                                            (ceil(self.img_data.shape[1] /
-                                                  2)), :] > 1e-2
+                                            (ceil(self.img_data.shape[1] / 2)), :] > 1e-2
             bands = [i for i, x in enumerate(non_empty_bands) if x]
             plot_data = self.img_data[:, :, (bands)]
             plot_data = plot_data.sum(axis=2)
@@ -109,19 +109,18 @@ class ImageData:
             logger.info(f"[ImageData] Wrong band choice was provided. Expected [] or len(bands) == 3, got {bands}")
             raise IncompatibleBandChoice
 
-    def plot_area_spectrum(self,
-                           top_right_coordinate: list[int],
-                           pixels_per_dimension: int = 5) -> None:
+    def plot_area_spectrum(self, top_right_coordinate: list[int], pixels_per_dimension: int = 5) -> None:
         """ Plot spectrum of pixels 
 
         :param top_right_coordinate: list[x, y], where x and y correspond to pixel coordinates of the requested square
         :param pixels_per_dimension: pixels per side of the square
         """
 
-        logger.info(f"[ImageData] Plotting mean spectrum of a {pixels_per_dimension} by {pixels_per_dimension} area starting at {top_right_coordinate}")
+        logger.info(
+            f"[ImageData] Plotting mean spectrum of a {pixels_per_dimension} by {pixels_per_dimension} area starting at {top_right_coordinate}"
+        )
 
-        area_data = self.mean_spectrum_area(top_right_coordinate,
-                                                   pixels_per_dimension)
+        area_data = self.mean_spectrum_area(top_right_coordinate, pixels_per_dimension)
         plt.plot(self.band_centers, area_data, label="Spectral response")
         plt.xlabel("Band")
         plt.ylabel("Reflectance")
@@ -144,10 +143,9 @@ class ImageData:
 
         logger.info("[ImageData] Vector nomralization completed")
 
-    def mean_spectrum_area(
-            self,
-            corner_coords: list[int] = [946, 349],
-            pixels_per_dimension: int = 5) -> list[np.float64] | None:
+    def mean_spectrum_area(self,
+                           corner_coords: list[int] = [946, 349],
+                           pixels_per_dimension: int = 5) -> list[np.float64] | None:
         """ Get mean spectrum of a selected square area
 
         :param img: image data
@@ -155,19 +153,22 @@ class ImageData:
         :param pixels_per_dimension: number of pixels per dimension
         """
 
-        logger.info(f"[ImageData] Calculating mean spectrum for area x: {corner_coords[0]}-{corner_coords[0] + pixels_per_dimension}, y: {corner_coords[1]}-{corner_coords[1] + pixels_per_dimension}...")
+        logger.info(
+            f"[ImageData] Calculating mean spectrum for area x: {corner_coords[0]}-{corner_coords[0] + pixels_per_dimension}, y: {corner_coords[1]}-{corner_coords[1] + pixels_per_dimension}..."
+        )
 
-        pixel_spectrum = self.img_data[corner_coords[0]:corner_coords[0] +
-                                       pixels_per_dimension,
-                                       corner_coords[1]:corner_coords[1] +
-                                       pixels_per_dimension, :]
+        pixel_spectrum = self.img_data[corner_coords[0]:corner_coords[0] + pixels_per_dimension,
+                                       corner_coords[1]:corner_coords[1] + pixels_per_dimension, :]
         mean_spectrum = pixel_spectrum.mean(axis=(0, 1))
 
         logger.info("[ImageData] Mean spectrum calculation completed")
-    
+
         return list(mean_spectrum)
 
-    def register_bands(self, other: ImageData, band_mask_paths_ref: list[str | None] | None = None, band_mask_paths_src: list[str | None] | None = None) -> ImageData:
+    def register_bands(self,
+                       other: ImageData,
+                       band_mask_paths_ref: list[str | None] | None = None,
+                       band_mask_paths_src: list[str | None] | None = None) -> ImageData:
         """ Register img_data of another ImageData class instance against this instance 
 
         :param other: ImageData class instance that is being registered against this one
@@ -179,7 +180,9 @@ class ImageData:
         logger.info("[ImageData] Starting image registration...")
 
         if self.nbands != other.nbands:
-            logger.info(f"[ImageData] Provided ImageData instances have incompatible number of bands ({self.nbands} vs {other.nbands})")
+            logger.info(
+                f"[ImageData] Provided ImageData instances have incompatible number of bands ({self.nbands} vs {other.nbands})"
+            )
             raise ImageDataIncompatible
 
         if self.img_data.size == 0:
@@ -194,13 +197,15 @@ class ImageData:
         for i_band in range(self.nbands):
             logger.info(f"[ImageData] Registering band {i_band} out of {self.nbands}...")
 
-            registered_img_data[:, :, i_band] = self._register_band(other, i_band, band_mask_paths_ref, band_mask_paths_src)
+            registered_img_data[:, :, i_band] = self._register_band(other, i_band, band_mask_paths_ref,
+                                                                    band_mask_paths_src)
 
-        logger.info(f"[ImageData] Image registration completed") 
+        logger.info(f"[ImageData] Image registration completed")
 
         return ImageData(registered_img_data, other.band_centers, other.nbands)
 
-    def _register_band(self, other: ImageData, i_band: int, band_mask_paths_ref: list[str | None] | None, band_mask_paths_src: list[str | None] | None) -> np.ndarray | None:
+    def _register_band(self, other: ImageData, i_band: int, band_mask_paths_ref: list[str | None] | None,
+                       band_mask_paths_src: list[str | None] | None) -> np.ndarray | None:
         """ Register single band """
 
         transformed_img = np.zeros((self.img_data.shape[0], self.img_data.shape[1]))
@@ -216,7 +221,7 @@ class ImageData:
                 mask_ref = None
         else:
             mask_ref = None
-       
+
         if band_mask_paths_src:
             if band_mask_paths_src[i_band]:
                 logger.info(f"[ImageData] Using src image mask: {band_mask_paths_src[i_band]}")
@@ -238,12 +243,18 @@ class ImageData:
         matches = matcher.match(des_ref, des_src)
         logger.info(f"[ImageData] Found {len(matches)} matches while registering band {i_band}")
 
-        img_matches = cv.drawMatches(img_ref, kp_ref, img_src, kp_src, matches, None, flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+        img_matches = cv.drawMatches(img_ref,
+                                     kp_ref,
+                                     img_src,
+                                     kp_src,
+                                     matches,
+                                     None,
+                                     flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
         plt.figure(figsize=(15, 5))
         plt.imshow(img_matches)
         plt.title('Feature Matches')
         plt.show()
-        
+
         p1 = np.zeros((len(matches), 2))
         p2 = np.zeros((len(matches), 2))
 
@@ -256,11 +267,11 @@ class ImageData:
         if homography is None:
             logger.warning(f"[ImageData] Couldn't find homography for band {i_band}, skipping...")
             return transformed_img
-        
+
         try:
             transformed_img[:, :] = cv.warpPerspective(img_src, homography, (img_ref.shape[1], img_ref.shape[0]))
             return transformed_img
-        
+
         except Exception as ex:
             logger.critical(f"[ImageData] Warping perspective for band {i_band} failed: {ex}")
             return None
@@ -314,7 +325,7 @@ class HyperspectralImageData(ImageData):
 
         :param filepath: path to the hyperspectral image file
         """
-        
+
         logger.info(f"[ImageData] Beginning import of hyperspectral file {filepath}...")
 
         img = spectral.open_image(filepath)

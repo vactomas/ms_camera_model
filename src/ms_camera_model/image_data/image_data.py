@@ -61,12 +61,9 @@ class ImageData:
         logger.info("[ImageData] Performing ImageData addition...")
 
         if not self.nbands == other.nbands and not self.band_centers == other.band_centers:
-            raise ImageDataIncompatible(
-                "ImageData objects used for addition are not compatible with each other"
-            )
+            raise ImageDataIncompatible("ImageData objects used for addition are not compatible with each other")
 
-        return ImageData(self.img_data + other.img_data, self.band_centers,
-                         self.nbands)
+        return ImageData(self.img_data + other.img_data, self.band_centers, self.nbands)
 
     def imshow(self, bands: list[int] = []) -> None:
         """ View image as an RGB interpretation of selected bands or as a brightness plot
@@ -77,8 +74,7 @@ class ImageData:
 
         if len(bands) == 3:
             logger.info(
-                f"[ImageData] Showing RGB interpretation from bands -> R:{bands[0]}, G:{bands[1]}, B:{bands[2]}"
-            )
+                f"[ImageData] Showing RGB interpretation from bands -> R:{bands[0]}, G:{bands[1]}, B:{bands[2]}")
 
             plot_band_list = [bands[0], bands[1], bands[2]]
             plot_data = self.img_data[:, :, (plot_band_list)]
@@ -105,8 +101,7 @@ class ImageData:
             logger.info("[ImageData] Showing image as a brightness plot")
 
             non_empty_bands = self.img_data[(ceil(self.img_data.shape[0] / 2)),
-                                            (ceil(self.img_data.shape[1] /
-                                                  2)), :] > 1e-2
+                                            (ceil(self.img_data.shape[1] / 2)), :] > 1e-2
             bands = [i for i, x in enumerate(non_empty_bands) if x]
             plot_data = self.img_data[:, :, (bands)]
             plot_data = plot_data.sum(axis=2)
@@ -117,14 +112,10 @@ class ImageData:
             plt.show()
 
         else:
-            logger.info(
-                f"[ImageData] Wrong band choice was provided. Expected [] or len(bands) == 3, got {bands}"
-            )
+            logger.info(f"[ImageData] Wrong band choice was provided. Expected [] or len(bands) == 3, got {bands}")
             raise IncompatibleBandChoice
 
-    def plot_area_spectrum(self,
-                           top_right_coordinate: list[int],
-                           pixels_per_dimension: int = 5) -> None:
+    def plot_area_spectrum(self, top_right_coordinate: list[int], pixels_per_dimension: int = 5) -> None:
         """ Plot spectrum of pixels 
 
         :param top_right_coordinate: list[x, y], where x and y correspond to pixel coordinates of the requested square
@@ -135,8 +126,7 @@ class ImageData:
             f"[ImageData] Plotting mean spectrum of a {pixels_per_dimension} by {pixels_per_dimension} area starting at {top_right_coordinate}"
         )
 
-        area_data = self.mean_spectrum_area(top_right_coordinate,
-                                            pixels_per_dimension)
+        area_data = self.mean_spectrum_area(top_right_coordinate, pixels_per_dimension)
         plt.plot(self.band_centers, area_data, label="Spectral response")
         plt.xlabel("Band")
         plt.ylabel("Reflectance")
@@ -145,8 +135,7 @@ class ImageData:
     def vector_normalize(self) -> None:
         """ Normalize img data """
 
-        logger.info(
-            "[ImageData] Performing vector normalization on the img_data...")
+        logger.info("[ImageData] Performing vector normalization on the img_data...")
 
         pixels = self.img_data.reshape(-1, self.img_data.shape[2])
         norms = np.linalg.norm(pixels, axis=1)
@@ -160,10 +149,9 @@ class ImageData:
 
         logger.info("[ImageData] Vector normalization completed")
 
-    def mean_spectrum_area(
-            self,
-            corner_coords: list[int] = [946, 349],
-            pixels_per_dimension: int = 5) -> list[np.float64] | None:
+    def mean_spectrum_area(self,
+                           corner_coords: list[int] = [946, 349],
+                           pixels_per_dimension: int = 5) -> list[np.float64] | None:
         """ Get mean spectrum of a selected square area
 
         :param img: image data
@@ -175,22 +163,18 @@ class ImageData:
             f"[ImageData] Calculating mean spectrum for area x: {corner_coords[0]}-{corner_coords[0] + pixels_per_dimension}, y: {corner_coords[1]}-{corner_coords[1] + pixels_per_dimension}..."
         )
 
-        pixel_spectrum = self.img_data[corner_coords[0]:corner_coords[0] +
-                                       pixels_per_dimension,
-                                       corner_coords[1]:corner_coords[1] +
-                                       pixels_per_dimension, :]
+        pixel_spectrum = self.img_data[corner_coords[0]:corner_coords[0] + pixels_per_dimension,
+                                       corner_coords[1]:corner_coords[1] + pixels_per_dimension, :]
         mean_spectrum = pixel_spectrum.mean(axis=(0, 1))
 
         logger.info("[ImageData] Mean spectrum calculation completed")
 
         return list(mean_spectrum)
 
-    def register_bands(
-        self,
-        other: ImageData | int,
-        band_mask_paths_ref: list[str | None] | None = None,
-        band_mask_paths_src: list[str | None] | None = None
-    ) -> ImageData | None:
+    def register_bands(self,
+                       other: ImageData | int,
+                       band_mask_paths_ref: list[str | None] | None = None,
+                       band_mask_paths_src: list[str | None] | None = None) -> ImageData | None:
         """ Register img_data of another ImageData class instance against this instance 
 
         :param other: ImageData class instance that is being registered against this one
@@ -217,36 +201,27 @@ class ImageData:
             logger.info("[ImageData] self.img_data is empty")
             raise NoImageData
 
-        registered_img_data = np.zeros(
-            (self.img_data.shape[0], self.img_data.shape[1],
-             self.img_data.shape[2]),
-            dtype=np.float64)
+        registered_img_data = np.zeros((self.img_data.shape[0], self.img_data.shape[1], self.img_data.shape[2]),
+                                       dtype=np.float64)
 
         for i_band in range(self.nbands):
-            logger.info(
-                f"[ImageData] Registering band {i_band} out of {self.nbands}..."
-            )
+            logger.info(f"[ImageData] Registering band {i_band} out of {self.nbands}...")
 
-            registered_img_data[:, :, i_band] = self._register_band(
-                other, i_band, band_mask_paths_ref, band_mask_paths_src)
+            registered_img_data[:, :, i_band] = self._register_band(other, i_band, band_mask_paths_ref,
+                                                                    band_mask_paths_src)
 
         logger.info(f"[ImageData] Image registration completed")
 
         if type(other) is int:
-            return ImageData(registered_img_data, self.band_centers,
-                             self.nbands)
+            return ImageData(registered_img_data, self.band_centers, self.nbands)
         else:
-            return ImageData(registered_img_data, other.band_centers,
-                             other.nbands)
+            return ImageData(registered_img_data, other.band_centers, other.nbands)
 
-    def _register_band(
-            self, other: ImageData | int, i_band: int,
-            band_mask_paths_ref: list[str | None] | None,
-            band_mask_paths_src: list[str | None] | None) -> np.ndarray | None:
+    def _register_band(self, other: ImageData | int, i_band: int, band_mask_paths_ref: list[str | None] | None,
+                       band_mask_paths_src: list[str | None] | None) -> np.ndarray | None:
         """ Register single band """
 
-        transformed_img = np.zeros(
-            (self.img_data.shape[0], self.img_data.shape[1]), dtype=np.float64)
+        transformed_img = np.zeros((self.img_data.shape[0], self.img_data.shape[1]), dtype=np.float64)
 
         img_ref = self.img_data[:, :, i_band]
 
@@ -257,11 +232,8 @@ class ImageData:
 
         if band_mask_paths_ref:
             if band_mask_paths_ref[i_band]:
-                logger.info(
-                    f"[ImageData] Using ref image mask: {band_mask_paths_ref[i_band]}"
-                )
-                mask_ref = cv.imread(band_mask_paths_ref[i_band],
-                                     cv.IMREAD_GRAYSCALE)
+                logger.info(f"[ImageData] Using ref image mask: {band_mask_paths_ref[i_band]}")
+                mask_ref = cv.imread(band_mask_paths_ref[i_band], cv.IMREAD_GRAYSCALE)
             else:
                 mask_ref = None
         else:
@@ -269,11 +241,8 @@ class ImageData:
 
         if band_mask_paths_src:
             if band_mask_paths_src[i_band]:
-                logger.info(
-                    f"[ImageData] Using src image mask: {band_mask_paths_src[i_band]}"
-                )
-                mask_src = cv.imread(band_mask_paths_src[i_band],
-                                     cv.IMREAD_GRAYSCALE)
+                logger.info(f"[ImageData] Using src image mask: {band_mask_paths_src[i_band]}")
+                mask_src = cv.imread(band_mask_paths_src[i_band], cv.IMREAD_GRAYSCALE)
             else:
                 mask_src = None
         else:
@@ -284,23 +253,17 @@ class ImageData:
         # img_ref_exp_comp = exposure.rescale_intensity(img_ref_exp_comp, in_range=(0, 100), out_range=(0, 1))
         # img_src_exp_comp = exposure.rescale_intensity(img_src_exp_comp, in_range=(0, 100), out_range=(0, 1))
 
-        img_ref_calc = cv.normalize(img_ref_exp_comp, None, 255, 0,
-                                    cv.NORM_MINMAX, cv.CV_8U)
-        img_src_calc = cv.normalize(img_src_exp_comp, None, 255, 0,
-                                    cv.NORM_MINMAX, cv.CV_8U)
+        img_ref_calc = cv.normalize(img_ref_exp_comp, None, 255, 0, cv.NORM_MINMAX, cv.CV_8U)
+        img_src_calc = cv.normalize(img_src_exp_comp, None, 255, 0, cv.NORM_MINMAX, cv.CV_8U)
 
         finder = cv.AKAZE_create(threshold=0.000001)
         kp_ref, des_ref = finder.detectAndCompute(img_ref_calc, mask_ref)
         kp_src, des_src = finder.detectAndCompute(img_src_calc, mask_src)
-        logger.info(
-            f"[ImageData] Found {len(kp_ref)} points in reference image and {len(kp_src)} in source image."
-        )
+        logger.info(f"[ImageData] Found {len(kp_ref)} points in reference image and {len(kp_src)} in source image.")
 
         matcher = cv.BFMatcher(cv.NORM_HAMMING, crossCheck=False)
         matches = matcher.knnMatch(des_ref, des_src, k=2)
-        logger.info(
-            f"[ImageData] Found {len(matches)} matches while registering band {i_band}"
-        )
+        logger.info(f"[ImageData] Found {len(matches)} matches while registering band {i_band}")
 
         good_matches = []
 
@@ -315,14 +278,13 @@ class ImageData:
         p2 = np.float32([kp_src[m.trainIdx].pt
                          for m in good_matches])  #.reshape(-1, 1, 2)
 
-        img_matches = cv.drawMatches(
-            img_ref_calc,
-            kp_ref,
-            img_src_calc,
-            kp_src,
-            good_matches,
-            None,
-            flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+        img_matches = cv.drawMatches(img_ref_calc,
+                                     kp_ref,
+                                     img_src_calc,
+                                     kp_src,
+                                     good_matches,
+                                     None,
+                                     flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
         plt.figure(figsize=(15, 5))
         plt.imshow(img_matches)
         plt.title('Feature Matches')
@@ -331,9 +293,7 @@ class ImageData:
         homography, inliers = cv.findHomography(p2, p1, cv.RANSAC, 2.5)
 
         if homography is None or inliers is None:
-            logger.warning(
-                f"[ImageData] Couldn't find homography for band {i_band}, skipping..."
-            )
+            logger.warning(f"[ImageData] Couldn't find homography for band {i_band}, skipping...")
             return transformed_img
 
         try:
@@ -346,11 +306,7 @@ class ImageData:
 
             rows, cols = img_ref.shape[:2]
 
-            transformed_img = warp(img_src,
-                                   tform,
-                                   output_shape=(rows, cols),
-                                   order=1,
-                                   mode='edge')
+            transformed_img = warp(img_src, tform, output_shape=(rows, cols), order=1, mode='edge')
 
             if img_ref.dtype == np.uint8:
                 transformed_img = (transformed_img * 255).astype(np.uint8)
@@ -360,9 +316,7 @@ class ImageData:
             return transformed_img
 
         except Exception as ex:
-            logger.critical(
-                f"[ImageData] Warping perspective for band {i_band} failed: {ex}"
-            )
+            logger.critical(f"[ImageData] Warping perspective for band {i_band} failed: {ex}")
             return None
 
     def normalize_img_data(self) -> None:
@@ -380,11 +334,10 @@ class MultispectralImageData(ImageData):
     :method load_ms_imgs: Load multispectral image data into img_data as np.ndarray
     """
 
-    def import_altum_pt_ms_imgs(
-            self,
-            filepaths: list[str],
-            panel_calibration: dict[(str, float)],
-            panel_location: list[list[int]] = None) -> None:
+    def import_altum_pt_ms_imgs(self,
+                                filepaths: list[str],
+                                panel_calibration: dict[(str, float)],
+                                panel_location: list[list[int]] = None) -> None:
         """ Import and pre-process Altum PT images 
 
         :param filepaths: list of filepaths to the multispectral images, their order determines order in the final array
@@ -413,9 +366,7 @@ class MultispectralImageData(ImageData):
         plt.ion()
 
         for i_img in range(num_of_images):
-            logger.info(
-                f"[ImageData] Importing MicaSense multispectral image {filepaths[i_img]}..."
-            )
+            logger.info(f"[ImageData] Importing MicaSense multispectral image {filepaths[i_img]}...")
 
             img_raw = cv.imread(filepaths[i_img], cv.IMREAD_UNCHANGED)
             meta = metadata.Metadata(filepaths[i_img])
@@ -432,14 +383,10 @@ class MultispectralImageData(ImageData):
             else:
                 plotutils.plotwithcolorbar(radiance_img)
 
-                ulx = int(
-                    input("Upper left column (x coordinate) of panel area: "))
-                uly = int(
-                    input("Upper left row (y coordinate) of panel area: "))
-                lrx = int(
-                    input("Lower right column (x coordinate) of panel area: "))
-                lry = int(
-                    input("Lower right row (y coordinate) of panel area: "))
+                ulx = int(input("Upper left column (x coordinate) of panel area: "))
+                uly = int(input("Upper left row (y coordinate) of panel area: "))
+                lrx = int(input("Lower right column (x coordinate) of panel area: "))
+                lry = int(input("Lower right row (y coordinate) of panel area: "))
 
             panel_region = radiance_img[uly:lry, ulx:lrx]
             mean_radiance = panel_region.mean()
@@ -450,8 +397,7 @@ class MultispectralImageData(ImageData):
             reflectance_img = radiance_img * radiance_to_reflectance
 
             if i_img == 0:
-                self.img_data = np.zeros(
-                    (img_raw.shape[0], img_raw.shape[1], num_of_images))
+                self.img_data = np.zeros((img_raw.shape[0], img_raw.shape[1], num_of_images))
 
             self.img_data[:, :, i_img] = img_as_float(reflectance_img)
 
@@ -459,8 +405,7 @@ class MultispectralImageData(ImageData):
 
         plt.ioff()
 
-        logger.info(
-            "[ImageData] Import of MicaSense multispectral images completed")
+        logger.info("[ImageData] Import of MicaSense multispectral images completed")
 
     def import_ms_imgs(self, filepaths: list[str]) -> None:
         """ Import multispectral images as a np.ndarray 
@@ -483,15 +428,12 @@ class MultispectralImageData(ImageData):
             raise NoProvidedFilepaths
 
         for i_img in range(num_of_images):
-            logger.info(
-                f"[ImageData] Importing multispectral image {filepaths[i_img]}..."
-            )
+            logger.info(f"[ImageData] Importing multispectral image {filepaths[i_img]}...")
 
             img = cv.imread(filepaths[i_img], cv.IMREAD_UNCHANGED)
 
             if i_img == 0:
-                self.img_data = np.zeros(
-                    (img.shape[0], img.shape[1], num_of_images))
+                self.img_data = np.zeros((img.shape[0], img.shape[1], num_of_images))
 
             self.img_data[:, :, i_img] = img_as_float(img)
 
@@ -513,9 +455,7 @@ class HyperspectralImageData(ImageData):
         :param filepath: path to the hyperspectral image file
         """
 
-        logger.info(
-            f"[ImageData] Beginning import of hyperspectral file {filepath}..."
-        )
+        logger.info(f"[ImageData] Beginning import of hyperspectral file {filepath}...")
 
         img = spectral.open_image(filepath)
 

@@ -7,8 +7,6 @@
 =======================================================================================================================
 '''
 
-__all__ = [
-    "MultispectralCameraModel"
-]
+__all__ = ["MultispectralCameraModel"]
 
 from ms_camera_model.model.model import MultispectralCameraModel
