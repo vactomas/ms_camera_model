@@ -1,9 +1,9 @@
 '''
-=======================================================================================================================
-- Name:         Multispectral camera model - Filters and Sensors
-- Description:  Dataclasses and their methods for filters and sensors
-- Author:       Tomas Vacek
-=======================================================================================================================
+Multispectral Camera Model - Filters and Sensors
+================================================
+
+* **Description:** Dataclasses and their methods for filters and sensors
+* **Author:** Tomas Vacek
 '''
 
 from __future__ import annotations

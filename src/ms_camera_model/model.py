@@ -1,10 +1,10 @@
 '''
-=======================================================================================================================
-- Name:         Multispectral camera model - simulation model
-- Description:  Simulated model of a multispectral camera. Takes in hyperspectral data and colour filter specs. Outputs
-                multispectral data
-- Author:       Tomas Vacek
-=======================================================================================================================
+Multispectral Camera Model - Simulation Model
+=============================================
+
+* **Description:** Simulated model of a multispectral camera. Takes in hyperspectral data and colour filter specs.
+  Outputs multispectral data
+* **Author:** Tomas Vacek
 '''
 
 from __future__ import annotations

@@ -1,9 +1,9 @@
 '''
-=======================================================================================================================
-- Name:         Multispectral camera model - Image data
-- Description:  Dataclasses and their methods for image data
-- Author:       Tomas Vacek
-=======================================================================================================================
+Multispectral Camera Model - Image Data
+=======================================
+
+* **Description:** Dataclasses and their methods for image data
+* **Author:** Tomas Vacek
 '''
 
 from __future__ import annotations
@@ -161,11 +161,13 @@ class ImageData:
         :param corner_coords: coordinates of corners of the area in format [ulx, uly, lrx, lry]
         """
 
-        logger.info(
-            f"[ImageData] Calculating mean for area x: {corner_coords[0]}-{corner_coords[2]}, y: {corner_coords[1]}-{corner_coords[3]}..."
-        )
+        img_3d = np.atleast_3d(img)
 
-        pixel_spectrum = img[corner_coords[1]:corner_coords[3], corner_coords[0]:corner_coords[2], :]
+        ulx, uly, lrx, lry = corner_coords
+
+        logger.info(f"[ImageData] Calculating mean for area x: {ulx}-{lrx}, y: {uly}-{lry}...")
+
+        pixel_spectrum = img_3d[uly:lry, ulx:lrx, :]
         mean_spectrum = pixel_spectrum.mean(axis=(0, 1))
 
         logger.info("[ImageData] Mean calculation for selected area completed")

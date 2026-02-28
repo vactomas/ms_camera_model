@@ -1,9 +1,9 @@
 '''
-=======================================================================================================================
-- Name:         Multispectral camera model - Data comparison
-- Description:  Dataclasses and their methods for filters and sensors
-- Author:       Tomas Vacek
-=======================================================================================================================
+Multispectral Camera Model - Data Comparison
+============================================
+
+* **Description:** Classes and their methods used for comparing real MS data with modeled data
+* **Author:** Tomas Vacek
 '''
 
 import logging

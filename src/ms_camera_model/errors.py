@@ -1,9 +1,9 @@
 '''
-=======================================================================================================================
-- Name:         Multispectral camera model - Custom errors
-- Description:  Custom error definitions to improve readability and make debugging easier
-- Author:       Tomas Vacek
-=======================================================================================================================
+Multispectral Camera Model - Custom Errors
+==========================================
+
+* **Description:** Custom error definitions to improve readability and make debugging easier
+* **Author:** Tomas Vacek
 '''
 
 
