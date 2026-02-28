@@ -1,0 +1,265 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ms_camera_model &mdash; Multispectral Camera Simulator  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="ms_camera_model package" href="ms_camera_model.html" />
+    <link rel="prev" title="Multispectral Camera Simulator documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Multispectral Camera Simulator
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ms_camera_model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ms_camera_model.html">ms_camera_model package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Multispectral Camera Simulator</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ms_camera_model</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/modules.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ms-camera-model">
+<h1>ms_camera_model<a class="headerlink" href="#ms-camera-model" title="Link to this heading"></a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="ms_camera_model.html">ms_camera_model package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ms_camera_model.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ms_camera_model.html#module-ms_camera_model.data_comparison">ms_camera_model.data_comparison module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#multispectral-camera-model-data-comparison">Multispectral Camera Model - Data Comparison</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.data_comparison.DataComparator"><code class="docutils literal notranslate"><span class="pre">DataComparator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.data_comparison.DataComparator.compare_band_ratios"><code class="docutils literal notranslate"><span class="pre">DataComparator.compare_band_ratios()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ms_camera_model.html#module-ms_camera_model.errors">ms_camera_model.errors module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#multispectral-camera-model-custom-errors">Multispectral Camera Model - Custom Errors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.errors.ImageDataIncompatible"><code class="docutils literal notranslate"><span class="pre">ImageDataIncompatible</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.errors.IncompatibleBandChoice"><code class="docutils literal notranslate"><span class="pre">IncompatibleBandChoice</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.errors.NoImageData"><code class="docutils literal notranslate"><span class="pre">NoImageData</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.errors.NoProvidedArea"><code class="docutils literal notranslate"><span class="pre">NoProvidedArea</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.errors.NoProvidedFilepaths"><code class="docutils literal notranslate"><span class="pre">NoProvidedFilepaths</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ms_camera_model.html#module-ms_camera_model.filter_sensor">ms_camera_model.filter_sensor module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#multispectral-camera-model-filters-and-sensors">Multispectral Camera Model - Filters and Sensors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.filter_sensor.FilterSensorUnit"><code class="docutils literal notranslate"><span class="pre">FilterSensorUnit</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.filter_sensor.FilterSensorUnit.calculate_combined_attenuation"><code class="docutils literal notranslate"><span class="pre">FilterSensorUnit.calculate_combined_attenuation()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.filter_sensor.FilterSensorUnit.combined_attenuation"><code class="docutils literal notranslate"><span class="pre">FilterSensorUnit.combined_attenuation</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.filter_sensor.FilterSensorUnit.filter_spec"><code class="docutils literal notranslate"><span class="pre">FilterSensorUnit.filter_spec</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.filter_sensor.FilterSensorUnit.from_excel"><code class="docutils literal notranslate"><span class="pre">FilterSensorUnit.from_excel()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.filter_sensor.FilterSensorUnit.interpolate_to_hs_data"><code class="docutils literal notranslate"><span class="pre">FilterSensorUnit.interpolate_to_hs_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.filter_sensor.FilterSensorUnit.sensor_spec"><code class="docutils literal notranslate"><span class="pre">FilterSensorUnit.sensor_spec</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.filter_sensor.FilterSpecs"><code class="docutils literal notranslate"><span class="pre">FilterSpecs</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.filter_sensor.FilterSpecs.band_center"><code class="docutils literal notranslate"><span class="pre">FilterSpecs.band_center</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.filter_sensor.FilterSpecs.band_width"><code class="docutils literal notranslate"><span class="pre">FilterSpecs.band_width</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.filter_sensor.FilterSpecs.filter_transmission"><code class="docutils literal notranslate"><span class="pre">FilterSpecs.filter_transmission</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.filter_sensor.FilterSpecs.name"><code class="docutils literal notranslate"><span class="pre">FilterSpecs.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.filter_sensor.FilterSpecs.supplier"><code class="docutils literal notranslate"><span class="pre">FilterSpecs.supplier</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.filter_sensor.SensorSpecs"><code class="docutils literal notranslate"><span class="pre">SensorSpecs</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.filter_sensor.SensorSpecs.name"><code class="docutils literal notranslate"><span class="pre">SensorSpecs.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.filter_sensor.SensorSpecs.sensor_qe_curve"><code class="docutils literal notranslate"><span class="pre">SensorSpecs.sensor_qe_curve</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.filter_sensor.SensorSpecs.sensor_type"><code class="docutils literal notranslate"><span class="pre">SensorSpecs.sensor_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.filter_sensor.SensorSpecs.supplier"><code class="docutils literal notranslate"><span class="pre">SensorSpecs.supplier</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ms_camera_model.html#module-ms_camera_model.image_data">ms_camera_model.image_data module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#multispectral-camera-model-image-data">Multispectral Camera Model - Image Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.image_data.HyperspectralImageData"><code class="docutils literal notranslate"><span class="pre">HyperspectralImageData</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.image_data.HyperspectralImageData.import_hs_img"><code class="docutils literal notranslate"><span class="pre">HyperspectralImageData.import_hs_img()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.image_data.ImageData"><code class="docutils literal notranslate"><span class="pre">ImageData</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.image_data.ImageData.band_centers"><code class="docutils literal notranslate"><span class="pre">ImageData.band_centers</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.image_data.ImageData.img_data"><code class="docutils literal notranslate"><span class="pre">ImageData.img_data</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.image_data.ImageData.imshow"><code class="docutils literal notranslate"><span class="pre">ImageData.imshow()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.image_data.ImageData.mean_spectrum_area"><code class="docutils literal notranslate"><span class="pre">ImageData.mean_spectrum_area()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.image_data.ImageData.nbands"><code class="docutils literal notranslate"><span class="pre">ImageData.nbands</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.image_data.ImageData.normalize_img_data"><code class="docutils literal notranslate"><span class="pre">ImageData.normalize_img_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.image_data.ImageData.plot_area_spectrum"><code class="docutils literal notranslate"><span class="pre">ImageData.plot_area_spectrum()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.image_data.ImageData.register_bands"><code class="docutils literal notranslate"><span class="pre">ImageData.register_bands()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.image_data.ImageData.vector_normalize"><code class="docutils literal notranslate"><span class="pre">ImageData.vector_normalize()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.image_data.MultispectralImageData"><code class="docutils literal notranslate"><span class="pre">MultispectralImageData</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.image_data.MultispectralImageData.check_filepaths"><code class="docutils literal notranslate"><span class="pre">MultispectralImageData.check_filepaths()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.image_data.MultispectralImageData.import_altum_pt_ms_imgs"><code class="docutils literal notranslate"><span class="pre">MultispectralImageData.import_altum_pt_ms_imgs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.image_data.MultispectralImageData.import_ms_imgs"><code class="docutils literal notranslate"><span class="pre">MultispectralImageData.import_ms_imgs()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ms_camera_model.html#module-ms_camera_model.model">ms_camera_model.model module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#multispectral-camera-model-simulation-model">Multispectral Camera Model - Simulation Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.model.MultispectralCameraModel"><code class="docutils literal notranslate"><span class="pre">MultispectralCameraModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.model.MultispectralCameraModel.corrected_filter_sensor_units"><code class="docutils literal notranslate"><span class="pre">MultispectralCameraModel.corrected_filter_sensor_units</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.model.MultispectralCameraModel.filter_sensor_units"><code class="docutils literal notranslate"><span class="pre">MultispectralCameraModel.filter_sensor_units</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.model.MultispectralCameraModel.hs_data"><code class="docutils literal notranslate"><span class="pre">MultispectralCameraModel.hs_data</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.model.MultispectralCameraModel.out_data"><code class="docutils literal notranslate"><span class="pre">MultispectralCameraModel.out_data</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.model.MultispectralCameraModel.run_simulation"><code class="docutils literal notranslate"><span class="pre">MultispectralCameraModel.run_simulation()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ms_camera_model.html#module-ms_camera_model">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#id1">Multispectral Camera Model - Simulation Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.DataComparator"><code class="docutils literal notranslate"><span class="pre">DataComparator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.DataComparator.compare_band_ratios"><code class="docutils literal notranslate"><span class="pre">DataComparator.compare_band_ratios()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.FilterSensorUnit"><code class="docutils literal notranslate"><span class="pre">FilterSensorUnit</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.FilterSensorUnit.calculate_combined_attenuation"><code class="docutils literal notranslate"><span class="pre">FilterSensorUnit.calculate_combined_attenuation()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.FilterSensorUnit.combined_attenuation"><code class="docutils literal notranslate"><span class="pre">FilterSensorUnit.combined_attenuation</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.FilterSensorUnit.filter_spec"><code class="docutils literal notranslate"><span class="pre">FilterSensorUnit.filter_spec</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.FilterSensorUnit.from_excel"><code class="docutils literal notranslate"><span class="pre">FilterSensorUnit.from_excel()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.FilterSensorUnit.interpolate_to_hs_data"><code class="docutils literal notranslate"><span class="pre">FilterSensorUnit.interpolate_to_hs_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.FilterSensorUnit.sensor_spec"><code class="docutils literal notranslate"><span class="pre">FilterSensorUnit.sensor_spec</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.FilterSpecs"><code class="docutils literal notranslate"><span class="pre">FilterSpecs</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.FilterSpecs.band_center"><code class="docutils literal notranslate"><span class="pre">FilterSpecs.band_center</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.FilterSpecs.band_width"><code class="docutils literal notranslate"><span class="pre">FilterSpecs.band_width</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.FilterSpecs.filter_transmission"><code class="docutils literal notranslate"><span class="pre">FilterSpecs.filter_transmission</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.FilterSpecs.name"><code class="docutils literal notranslate"><span class="pre">FilterSpecs.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.FilterSpecs.supplier"><code class="docutils literal notranslate"><span class="pre">FilterSpecs.supplier</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.HyperspectralImageData"><code class="docutils literal notranslate"><span class="pre">HyperspectralImageData</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.HyperspectralImageData.import_hs_img"><code class="docutils literal notranslate"><span class="pre">HyperspectralImageData.import_hs_img()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.ImageData"><code class="docutils literal notranslate"><span class="pre">ImageData</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.ImageData.band_centers"><code class="docutils literal notranslate"><span class="pre">ImageData.band_centers</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.ImageData.img_data"><code class="docutils literal notranslate"><span class="pre">ImageData.img_data</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.ImageData.imshow"><code class="docutils literal notranslate"><span class="pre">ImageData.imshow()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.ImageData.mean_spectrum_area"><code class="docutils literal notranslate"><span class="pre">ImageData.mean_spectrum_area()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.ImageData.nbands"><code class="docutils literal notranslate"><span class="pre">ImageData.nbands</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.ImageData.normalize_img_data"><code class="docutils literal notranslate"><span class="pre">ImageData.normalize_img_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.ImageData.plot_area_spectrum"><code class="docutils literal notranslate"><span class="pre">ImageData.plot_area_spectrum()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.ImageData.register_bands"><code class="docutils literal notranslate"><span class="pre">ImageData.register_bands()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.ImageData.vector_normalize"><code class="docutils literal notranslate"><span class="pre">ImageData.vector_normalize()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.MultispectralCameraModel"><code class="docutils literal notranslate"><span class="pre">MultispectralCameraModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.MultispectralCameraModel.corrected_filter_sensor_units"><code class="docutils literal notranslate"><span class="pre">MultispectralCameraModel.corrected_filter_sensor_units</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.MultispectralCameraModel.filter_sensor_units"><code class="docutils literal notranslate"><span class="pre">MultispectralCameraModel.filter_sensor_units</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.MultispectralCameraModel.hs_data"><code class="docutils literal notranslate"><span class="pre">MultispectralCameraModel.hs_data</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.MultispectralCameraModel.out_data"><code class="docutils literal notranslate"><span class="pre">MultispectralCameraModel.out_data</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.MultispectralCameraModel.run_simulation"><code class="docutils literal notranslate"><span class="pre">MultispectralCameraModel.run_simulation()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.MultispectralImageData"><code class="docutils literal notranslate"><span class="pre">MultispectralImageData</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.MultispectralImageData.check_filepaths"><code class="docutils literal notranslate"><span class="pre">MultispectralImageData.check_filepaths()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.MultispectralImageData.import_altum_pt_ms_imgs"><code class="docutils literal notranslate"><span class="pre">MultispectralImageData.import_altum_pt_ms_imgs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.MultispectralImageData.import_ms_imgs"><code class="docutils literal notranslate"><span class="pre">MultispectralImageData.import_ms_imgs()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.SensorSpecs"><code class="docutils literal notranslate"><span class="pre">SensorSpecs</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.SensorSpecs.name"><code class="docutils literal notranslate"><span class="pre">SensorSpecs.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.SensorSpecs.sensor_qe_curve"><code class="docutils literal notranslate"><span class="pre">SensorSpecs.sensor_qe_curve</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.SensorSpecs.sensor_type"><code class="docutils literal notranslate"><span class="pre">SensorSpecs.sensor_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ms_camera_model.html#ms_camera_model.SensorSpecs.supplier"><code class="docutils literal notranslate"><span class="pre">SensorSpecs.supplier</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Multispectral Camera Simulator documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ms_camera_model.html" class="btn btn-neutral float-right" title="ms_camera_model package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Tomas Vacek.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

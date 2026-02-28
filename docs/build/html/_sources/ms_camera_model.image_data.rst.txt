@@ -1,0 +1,21 @@
+ms\_camera\_model.image\_data package
+=====================================
+
+Submodules
+----------
+
+ms\_camera\_model.image\_data.image\_data module
+------------------------------------------------
+
+.. automodule:: ms_camera_model.image_data.image_data
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Module contents
+---------------
+
+.. automodule:: ms_camera_model.image_data
+   :members:
+   :show-inheritance:
+   :undoc-members:
