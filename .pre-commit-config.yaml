@@ -2,8 +2,8 @@
 
 repos:
   - repo: https://github.com/google/yapf
-    rev: v0.40.1 # Use the latest stable version
+    rev: v0.40.1
     hooks:
       - id: yapf
         name: yapf
-        args: ['--style', 'google'] # This argument specifies the Google style
+        args: ['--style', '{based_on_style: google, column_limit: 120}']
