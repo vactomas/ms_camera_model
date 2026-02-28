@@ -6,9 +6,12 @@
 =======================================================================================================================
 '''
 
-__all__ = ["ImageDataIncompatible", "IncompatibleBandChoice", "NoProvidedFilepaths", "NoImageData"]
+__all__ = ["ImageDataIncompatible", "IncompatibleBandChoice", "NoImageData", "NoProvidedArea", "NoProvidedFilepaths"]
 
-from ms_camera_model.errors.errors import ImageDataIncompatible
-from ms_camera_model.errors.errors import IncompatibleBandChoice
-from ms_camera_model.errors.errors import NoProvidedFilepaths
-from ms_camera_model.errors.errors import NoImageData
+from ms_camera_model.errors.errors import (
+    ImageDataIncompatible,
+    IncompatibleBandChoice,
+    NoImageData,
+    NoProvidedArea,
+    NoProvidedFilepaths,
+)

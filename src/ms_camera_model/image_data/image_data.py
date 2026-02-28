@@ -117,22 +117,21 @@ class ImageData:
             logger.info(f"[ImageData] Wrong band choice was provided. Expected [] or len(bands) == 3, got {bands}")
             raise IncompatibleBandChoice
 
-    def plot_area_spectrum(self, top_right_coordinate: list[int], pixels_per_dimension: int = 5) -> None:
+    def plot_area_spectrum(self, coordinates: list[int]) -> None:
         """ Plot spectrum of pixels 
 
-        :param top_right_coordinate: list[x, y], where x and y correspond to pixel coordinates of the requested square
-        :param pixels_per_dimension: pixels per side of the square
+        :param coordinates: list[ulx, uly, lrx, lry] - ulx means upper left x, lry means lower right y, etc.
         """
 
         logger.info(
-            f"[ImageData] Plotting mean spectrum of a {pixels_per_dimension} by {pixels_per_dimension} area starting at {top_right_coordinate}"
+            f"[ImageData] Plotting mean spectrum of area x {coordinates[0]}:{coordinates[2]}, y {coordinates[1]}:{coordinates[3]}"
         )
 
         if self.band_centers is None:
             logger.error("[ImageData] Cannot plot spectrum - band_centers are missing.")
             return
 
-        area_data = self.mean_spectrum_area(top_right_coordinate, pixels_per_dimension)
+        area_data = self.mean_spectrum_area(self.img_data, coordinates)
         plt.plot(self.band_centers, area_data, label="Spectral response")
         plt.xlabel("Band")
         plt.ylabel("Reflectance")
@@ -154,28 +153,24 @@ class ImageData:
 
         logger.info("[ImageData] Vector normalization completed")
 
-    def mean_spectrum_area(self, corner_coords: list[int], pixels_per_dimension: int = 5) -> list[np.float64] | None:
-        """ Get mean spectrum of a selected square area
+    @staticmethod
+    def mean_spectrum_area(img: np.ndarray, corner_coords: list[int]) -> np.ndarray:
+        """ Calculate mean over spectral bands for select area
 
         :param img: image data
-        :param square_corner_coordinates: coordinates of an upper left corner of the square area
-        :param pixels_per_dimension: number of pixels per dimension
+        :param corner_coords: coordinates of corners of the area in format [ulx, uly, lrx, lry]
         """
 
-        ## TODO
-        ## Think about coordinates [x, y] vs [rows, cols] in computer visionn
-
         logger.info(
-            f"[ImageData] Calculating mean spectrum for area x: {corner_coords[0]}-{corner_coords[0] + pixels_per_dimension}, y: {corner_coords[1]}-{corner_coords[1] + pixels_per_dimension}..."
+            f"[ImageData] Calculating mean for area x: {corner_coords[0]}-{corner_coords[2]}, y: {corner_coords[1]}-{corner_coords[3]}..."
         )
 
-        pixel_spectrum = self.img_data[corner_coords[0]:corner_coords[0] + pixels_per_dimension,
-                                       corner_coords[1]:corner_coords[1] + pixels_per_dimension, :]
+        pixel_spectrum = img[corner_coords[1]:corner_coords[3], corner_coords[0]:corner_coords[2], :]
         mean_spectrum = pixel_spectrum.mean(axis=(0, 1))
 
-        logger.info("[ImageData] Mean spectrum calculation completed")
+        logger.info("[ImageData] Mean calculation for selected area completed")
 
-        return list(mean_spectrum)
+        return mean_spectrum
 
     def register_bands(self,
                        other: ImageData | int,
@@ -337,7 +332,9 @@ class ImageData:
 class MultispectralImageData(ImageData):
     """ Multispectral Image Data - loaded from real MS camera 
 
-    :method load_ms_imgs: Load multispectral image data into img_data as np.ndarray
+    :method import_altum_pt_ms_imgs: method for import of images from MicaSense Altum-PT camera
+    :method import_ms_imgs: method for import of generic multispectral images
+    :method check_filepaths: method which checks that filepaths are a non-empty list and are strings
     """
 
     @classmethod
@@ -346,9 +343,13 @@ class MultispectralImageData(ImageData):
         """ Import and pre-process Altum PT images 
 
         :param filepaths: list of filepaths to the multispectral images, their order determines order in the final array
-        :param panel_calibration: panel_calibration data of used CRP panel
+        :param panel_calibration: panel_calibration data of used MicaSense CRP
         :param panel_location: panel_location information format [[ulx, uly, lrx, lry], [ulx, ...]]
-        :raises NoProvidedFilepaths: when the filepaths param is empty
+        :raises NoProvidedArea: when the provided area of the CRP is None or empty
+        :raises Exception: when the length of filepaths and panel_locations doesn't match
+        :raises TypeError: when provided paths aren't in list
+        :raises TypeError: when provided paths aren't strings
+        :raises NoProvidedFilepaths: when there are no provided filepaths
         """
 
         logger.info("[ImageData] Beginning import of multispectral images...")
@@ -380,12 +381,7 @@ class MultispectralImageData(ImageData):
             radiance_img, *_ = msutils.raw_image_to_radiance(meta, img_raw)
 
             coordinates = panel_location[i_img]
-            ulx = coordinates[0]
-            uly = coordinates[1]
-            lrx = coordinates[2]
-            lry = coordinates[3]
-            panel_region = radiance_img[uly:lry, ulx:lrx]
-            mean_radiance = panel_region.mean()
+            mean_radiance = ImageData.mean_spectrum_area(img_raw, coordinates)
 
             band_name = meta.get_item('XMP:BandName')
             band_centers.append(meta.get_item('XMP:CentralWavelength'))
@@ -411,7 +407,9 @@ class MultispectralImageData(ImageData):
         """ Import multispectral images as a np.ndarray 
 
         :param filepaths: list of filepaths to the multispectral images, their order determines order in the final array
-        :raises NoProvidedFilepaths: when the filepaths param is empty
+        :raises TypeError: when provided paths aren't in list
+        :raises TypeError: when provided paths aren't strings
+        :raises NoProvidedFilepaths: when there are no provided filepaths
         """
 
         logger.info("[ImageData] Beginning import of multispectral images...")
@@ -448,6 +446,9 @@ class MultispectralImageData(ImageData):
         """ Check that provided list of filepaths is usable
 
         :param filepaths: list of filepaths
+        :raises TypeError: when provided paths aren't in list
+        :raises TypeError: when provided paths aren't strings
+        :raises NoProvidedFilepaths: when there are no provided filepaths
         """
 
         if not isinstance(filepaths, list):
@@ -495,5 +496,5 @@ class HyperspectralImageData(ImageData):
     def _perform_radiometric_calibration(self, filepath: str) -> None:
         """ Perform radiometric calibration based on calibration plate with known albedo
 
-        :param filepath: path to the wavelenght-albedo file
+        :param filepath: path to the wavelength-albedo file
         """
