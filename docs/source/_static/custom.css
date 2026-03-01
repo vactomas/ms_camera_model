@@ -1,0 +1,10 @@
+/* Make the main content area wider */
+.wy-nav-content {
+    max-width: none !important;
+}
+
+/* Allow long lines of code and parameters to wrap instead of overflowing */
+code, .rst-content tt.literal, .rst-content code {
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+}

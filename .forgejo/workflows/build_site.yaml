@@ -14,8 +14,31 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 
+      - name: Set up uv cache
+        uses: actions/cache@v4
+        with:
+          path: /root/.cache/uv
+          key: uv-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            uv-${{ runner.os }}-
+
+      - name: Install missing dependencies and rsync
+        run: |
+          apt update
+          apt install -y libgdal-dev g++ libgl1 rsync
+          echo "GDAL_VERSION=$(gdal-config --version)" >> $GITHUB_ENV
+
+      - name: Sync with extras
+        run: |
+          export CPLUS_INCLUDE_PATH=/usr/include/gdal
+          export C_INCLUDE_PATH=/usr/include/gdal
+          uv add "gdal==${{ env.GDAL_VERSION }}.*"
+          uv sync --all-extras --dev
+
       - name: Build Docs
-        run: uv run sphinx-build -b html docs/source docs/build/html
+        run: |
+          uv run sphinx-apidoc -f -o docs/source src/ms_camera_model/
+          uv run sphinx-build -b html docs/source docs/build/html
 
       - name: Deploy to VPS
         env:
@@ -23,7 +46,7 @@ jobs:
           SSH_PORT: ${{ secrets.SSH_PORT }}
           SSH_USER: runner
           VPS_HOST: ${{ vars.VPSHOST }}
-          DEST_PATH: /opt/stacks/caddy/site
+          DEST_PATH: /opt/stacks/caddy/site/docs/
         run: |
           # Set up SSH agent
           mkdir -p ~/.ssh
