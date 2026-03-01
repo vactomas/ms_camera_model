@@ -1,0 +1,37 @@
+name: Deploy ms_camera_model docs to Caddy
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Build Docs
+        run: uv run sphinx-build -b html docs/source docs/build/html
+
+      - name: Deploy to VPS
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: runner
+          VPS_HOST: ${{ vars.VPSHOST }}
+          DEST_PATH: /opt/stacks/caddy/site
+        run: |
+          # Set up SSH agent
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          
+          # Add host to known_hosts to avoid manual verification
+          ssh-keyscan -p "$SSH_PORT" "$VPS_HOST" >> ~/.ssh/known_hosts
+          
+          # Run rsync
+          rsync -avz --delete -e "ssh -p $SSH_PORT" docs/build/html/ "$SSH_USER@$VPS_HOST:$DEST_PATH"
