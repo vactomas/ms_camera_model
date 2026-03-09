@@ -5,12 +5,11 @@ Multispectral Camera Model - Data Comparison
 * **Description:** Classes and their methods used for comparing real MS data with modeled data
 * **Author:** Tomas Vacek
 '''
-
 import logging
 
-import matplotlib.pyplot as plt
 import numpy as np
 
+from ms_camera_model.errors import ImageDataIncompatible, InvalidProvidedArea
 from ms_camera_model.image_data import ImageData
 
 logger = logging.getLogger(__name__)
@@ -23,30 +22,53 @@ class DataComparator:
         self.ms_img_data: ImageData = ms_img_data
         self.modeled_img_data: ImageData = modeled_img_data
 
-    def compare_band_ratios(self, set_areas_globaly: bool = True) -> tuple[list[float], list[float]]:
+    def compare_band_ratios(self,
+                            real_ms_area_location: list[int] | list[list[int]],
+                            modeled_ms_area_location: list[int] | list[list[int]],
+                            set_areas_globally: bool = True) -> tuple[list[int | float], list[int | float]]:
         """ Compare band ratios of real MS image data with modeled MS image data """
 
-        if set_areas_globaly:
-            logging.info("[DataComparator] Select area for comparison")
+        logging.info("[DataComparator] Preparing comparison...")
 
-            plt.ion()
+        if set_areas_globally:
 
-            self.ms_img_data.imshow()
+            if type(real_ms_area_location) is list[list[int]] or type(modeled_ms_area_location) is list[list[int]]:
+                raise InvalidProvidedArea(
+                    f"Expected area types list[int], got {type(real_ms_area_location)} and {type(modeled_ms_area_location)}"
+                )
 
-            x_coordinate = int(input("Type in x coordinate of upper left square corner: ").strip())
-            y_coordinate = int(input("Type in y coordinate of upper left square corner: ").strip())
-            square_size = int(input("Type in edge size (defaults to 10): ") or "10")
-
-            logging.info(f"[DataComparator] {self.ms_img_data.img_data.shape}")
-            logging.info(f"[DataComparator] {self.modeled_img_data.img_data.shape}")
-
-            real_ms_square_mean = self._find_mean_value_for_square(self.ms_img_data.img_data, y_coordinate,
-                                                                   x_coordinate, square_size)
-            modeled_ms_square_mean = self._find_mean_value_for_square(self.modeled_img_data.img_data, y_coordinate,
-                                                                      x_coordinate, square_size)
+            real_ms_square_mean = ImageData.mean_spectrum_area(self.ms_img_data, real_ms_area_location)
+            modeled_ms_square_mean = ImageData.mean_spectrum_area(self.modeled_img_data, modeled_ms_area_location)
 
             real_ms_ratios = real_ms_square_mean / np.sum(real_ms_square_mean)
             modeled_ms_ratios = modeled_ms_square_mean / np.sum(modeled_ms_square_mean)
+
+        else:
+            if self.ms_img_data.nbands == self.modeled_img_data.nbands:
+
+                if len(real_ms_area_location) != len(modeled_ms_area_location):
+                    InvalidProvidedArea("Area location lists are not of the same size")
+
+                if len(real_ms_area_location) != self.ms_img_data.nbands:
+                    InvalidProvidedArea(
+                        f"Provided area locations ({len(real_ms_area_location)}) does not match the number of bands ({self.ms_img_data.nbands})"
+                    )
+
+                real_ms_square_mean = np.zeros((self.ms_img_data.nbands))
+                modeled_ms_square_mean = np.zeros((self.ms_img_data.nbands))
+
+                for band in range(self.ms_img_data.nbands):
+
+                    real_ms_square_mean[band] = ImageData.mean_spectrum_area(self.ms_img_data.img_data[:, :, band],
+                                                                             real_ms_area_location[band])
+                    modeled_ms_square_mean[band] = ImageData.mean_spectrum_area(
+                        self.modeled_img_data.img_data[:, :, band], modeled_ms_area_location[band])
+
+                real_ms_ratios = real_ms_square_mean / np.sum(real_ms_square_mean)
+                modeled_ms_ratios = modeled_ms_square_mean / np.sum(modeled_ms_square_mean)
+
+            else:
+                raise ImageDataIncompatible
 
             logging.info(
                 f"[DataComparator] SQR_mean: {real_ms_square_mean}, SUM: {np.sum(real_ms_square_mean)}, ratios: {real_ms_ratios}"
@@ -56,60 +78,6 @@ class DataComparator:
             )
 
             return [real_ms_ratios, modeled_ms_ratios]
-
-        else:
-            logging.info("[DataComparator] Select areas for comparison for each band")
-
-            if self.ms_img_data.nbands == self.modeled_img_data.nbands:
-
-                real_ms_square_mean = np.zeros((self.ms_img_data.nbands))
-                modeled_ms_square_mean = np.zeros((self.ms_img_data.nbands))
-
-                plt.ion()
-
-                for band in range(self.ms_img_data.nbands):
-
-                    self.ms_img_data.imshow([band])
-
-                    x_coordinate = int(input("Type in x coordinate of upper left square corner: ").strip())
-                    y_coordinate = int(input("Type in y coordinate of upper left square corner: ").strip())
-                    square_size = int(input("Type in edge size (defaults to 10): ") or "10")
-
-                    real_ms_square_mean[band] = self._find_mean_value_for_square(self.ms_img_data.img_data[:, :, band],
-                                                                                 y_coordinate,
-                                                                                 x_coordinate,
-                                                                                 square_size,
-                                                                                 single_band=True)
-
-                    self.modeled_img_data.imshow([band])
-
-                    x_coordinate = int(input("Type in x coordinate of upper left square corner: ").strip())
-                    y_coordinate = int(input("Type in y coordinate of upper left square corner: ").strip())
-                    square_size = int(input("Type in edge size (defaults to 10): ") or "10")
-
-                    modeled_ms_square_mean[band] = self._find_mean_value_for_square(
-                        self.modeled_img_data.img_data[:, :, band],
-                        y_coordinate,
-                        x_coordinate,
-                        square_size,
-                        single_band=True)
-
-                plt.ioff()
-
-                real_ms_ratios = real_ms_square_mean / np.sum(real_ms_square_mean)
-                modeled_ms_ratios = modeled_ms_square_mean / np.sum(modeled_ms_square_mean)
-
-                logging.info(
-                    f"[DataComparator] SQR_mean: {real_ms_square_mean}, SUM: {np.sum(real_ms_square_mean)}, ratios: {real_ms_ratios}"
-                )
-                logging.info(
-                    f"[DataComparator] SQR_mean: {modeled_ms_square_mean}, SUM: {np.sum(modeled_ms_square_mean)}, ratios: {modeled_ms_ratios}"
-                )
-
-                return [real_ms_ratios, modeled_ms_ratios]
-
-            else:
-                raise ImageDataIncompatible
 
     @staticmethod
     def _find_mean_value_for_square(img_data_array: np.ndarray,
