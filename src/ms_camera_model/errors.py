@@ -25,3 +25,7 @@ class NoImageData(Exception):
 
 class NoProvidedArea(Exception):
     """ No area was provided """
+
+
+class NoDarkFrame(Exception):
+    """ No embedded dark frame found """

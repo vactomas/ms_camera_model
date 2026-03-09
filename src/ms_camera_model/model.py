@@ -89,15 +89,10 @@ class MultispectralCameraModel:
 
         logger.info("[MSModel] Performing trapezoidal integration...")
 
-        out_img = np.trapezoid(data_through_unit, axis=2)
+        signal_integral = np.trapezoid(data_through_unit, axis=2)
+        filter_integral = np.trapezoid(filter_sensor_unit.combined_attenuation)
 
-        logger.info(f"[MSModel] Max integrated val: {out_img.max()}")
-        logger.info(f"[MSModel] Data type: {out_img.dtype}")
-
-        # out_img = out_img / data_through_unit.shape[2]
-
-        logger.info(f"[MSModel] Max out_img val: {out_img.max()}")
-        logger.info(f"[MSModel] Data type: {out_img.dtype}")
+        out_img = signal_integral / filter_integral
 
         logger.info("[MSModel] Band calculation completed")
 

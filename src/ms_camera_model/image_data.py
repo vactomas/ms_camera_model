@@ -2,8 +2,7 @@
 Multispectral Camera Model - Image Data
 =======================================
 
-* **Description:** Dataclasses and their methods for image data
-* **Author:** Tomas Vacek
+Dataclasses and their methods for image data
 '''
 
 from __future__ import annotations
@@ -16,13 +15,15 @@ import matplotlib.pyplot as plt
 import micasense.metadata as metadata
 import micasense.utils as msutils
 import numpy as np
+import pandas as pd
 import spectral
 from skimage import exposure, img_as_float
 from skimage.transform import PiecewiseAffineTransform, warp
 
-from ms_camera_model.errors import (
+from .errors import (
     ImageDataIncompatible,
     IncompatibleBandChoice,
+    NoDarkFrame,
     NoImageData,
     NoProvidedArea,
     NoProvidedFilepaths,
@@ -383,7 +384,7 @@ class MultispectralImageData(ImageData):
             radiance_img, *_ = msutils.raw_image_to_radiance(meta, img_raw)
 
             coordinates = panel_location[i_img]
-            mean_radiance = ImageData.mean_spectrum_area(img_raw, coordinates)
+            mean_radiance = ImageData.mean_spectrum_area(radiance_img, coordinates)
 
             band_name = meta.get_item('XMP:BandName')
             band_centers.append(meta.get_item('XMP:CentralWavelength'))
@@ -471,32 +472,89 @@ class HyperspectralImageData(ImageData):
     """
 
     @classmethod
-    def import_hs_img(cls, filepath: str) -> HyperspectralImageData:
+    def import_hs_img(cls, img_filepath: str, panel_data_filepath: str,
+                      panel_location: list[int]) -> HyperspectralImageData:
         """ Import hyperspectral cube as ImageData class instance 
 
-        :param filepath: path to the hyperspectral image file
+        :param img_filepath: path to the hyperspectral image file
+        :param panel_data_filepath: path to the csv panel albedo file
+        :param panel_location: panel_location information format [ulx, uly, lrx, lry]
         :raises NoImageData: when spectral fails to load the image
         """
 
-        logger.info(f"[ImageData] Beginning import of hyperspectral file {filepath}...")
+        logger.info(f"[ImageData] Beginning import of hyperspectral file {img_filepath}...")
 
         try:
-            img = spectral.open_image(filepath)
+            img = spectral.open_image(img_filepath)
 
         except Exception as e:
-            logger.error(f"[ImageData] Loading hyperspectral data from file {filepath} ended with error {e}")
+            logger.error(f"[ImageData] Loading hyperspectral data from file {img_filepath} ended with error {e}")
             raise NoImageData from e
 
         img_data = img.load()
-        band_centers = img.bands.centers
-        nbands = img.nbands
+        metadata = img.metadata
+
+        img_data_calibrated, valid_band_centers = HyperspectralImageData.perform_radiometric_calibration(
+            panel_data_filepath, metadata, img_data, panel_location)
+
+        nbands = img_data_calibrated.shape[2]
+        valid_band_centers = list(map(float, valid_band_centers))
 
         logger.info("[ImageData] Hyperspectral image import completed")
 
-        return HyperspectralImageData(img_data, band_centers, nbands)
+        return HyperspectralImageData(img_data_calibrated, valid_band_centers, nbands)
 
-    def _perform_radiometric_calibration(self, filepath: str) -> None:
+    @staticmethod
+    def perform_radiometric_calibration(filepath: str, metadata: dict[str, str], img_data: np.ndarray,
+                                        panel_location: list[int]) -> tuple[np.ndarray, np.ndarray]:
         """ Perform radiometric calibration based on calibration plate with known albedo
 
-        :param filepath: path to the wavelength-albedo file
+        :param filepath: path to the wavelength-albedo csv file
+        :param metadata: dict with hyperspectral data metadata
+        :param img_data: np.ndarray of image data with shape (rows, cols, bands)
+        :param panel_location: panel_location information format [ulx, uly, lrx, lry]
+        :return: calibrated numpy img_data array
         """
+
+        panel_calibration = pd.read_csv(filepath)
+        panel_wavelengths = panel_calibration.iloc[:, 0].values
+        panel_reflectance = panel_calibration.iloc[:, 1].values
+        panel_validity_start, panel_validity_end = [panel_wavelengths.min(), panel_wavelengths.max()]
+
+        if 'autodarkstartline' not in metadata:
+            raise NoDarkFrame
+
+        dark_frame_start = int(metadata['autodarkstartline'])
+        hs_data_wavelengths = np.array(list(map(float, metadata['wavelength'])))
+        band_data_mask = (hs_data_wavelengths >= panel_validity_start) & (hs_data_wavelengths <= panel_validity_end)
+        band_data_mask[0] = False
+
+        dark_frame = img_data[dark_frame_start:, :, band_data_mask]
+        dark_frame_mean = np.mean(dark_frame, axis=0)
+
+        dark_noise_sigma = np.std(dark_frame, axis=(0, 1))
+        snr_threshold = 5.0 * dark_noise_sigma
+
+        valid_data = img_data[:dark_frame_start, :, band_data_mask] - dark_frame_mean
+
+        valid_wavelengths = hs_data_wavelengths[band_data_mask]
+
+        white_reference = ImageData.mean_spectrum_area(valid_data, panel_location)
+
+        valid_bands_mask = white_reference > snr_threshold
+        dropped_bands_count = np.sum(~valid_bands_mask)
+        if dropped_bands_count > 0:
+            logger.warning(
+                f"[RadiometricCalibration] Dropped {dropped_bands_count} bands due to failing the 5-sigma SNR check.")
+
+        interpolated_calibration_data = np.interp(valid_wavelengths, panel_wavelengths, panel_reflectance)
+
+        calibration_factor = np.zeros_like(interpolated_calibration_data)
+        np.divide(interpolated_calibration_data, white_reference, out=calibration_factor, where=valid_bands_mask)
+
+        calibrated_data = valid_data * calibration_factor
+
+        calibrated_data = calibrated_data[:, :, valid_bands_mask]
+        valid_wavelengths = valid_wavelengths[valid_bands_mask]
+
+        return calibrated_data, valid_wavelengths
