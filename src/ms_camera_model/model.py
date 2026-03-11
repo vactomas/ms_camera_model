@@ -79,7 +79,10 @@ class MultispectralCameraModel:
         self.corrected_filter_sensor_units = corrected_units
 
     def _calculate_band(self, filter_sensor_unit: FilterSensorUnit) -> np.ndarray:
-        """ Calculate the image created by a filter sensor unit """
+        """ Calculate the image created by a filter sensor unit 
+
+        :param filter_sensor_unit: Input FilterSensorUnit
+        """
 
         logger.info("[MSModel] Calculating single band image from hyperspectral data...")
 
@@ -91,6 +94,7 @@ class MultispectralCameraModel:
 
         signal_integral = np.trapezoid(data_through_unit, axis=2)
         filter_integral = np.trapezoid(filter_sensor_unit.combined_attenuation)
+        # filter_integral = np.trapezoid(filter_sensor_unit.filter_spec.filter_transmission[:, 1])
 
         out_img = signal_integral / filter_integral
 

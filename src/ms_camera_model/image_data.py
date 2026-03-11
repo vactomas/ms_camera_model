@@ -472,8 +472,8 @@ class HyperspectralImageData(ImageData):
     """
 
     @classmethod
-    def import_hs_img(cls, img_filepath: str, panel_data_filepath: str,
-                      panel_location: list[int]) -> HyperspectralImageData:
+    def import_calibrated_hs_img(cls, img_filepath: str, panel_data_filepath: str,
+                                 panel_location: list[int]) -> HyperspectralImageData:
         """ Import hyperspectral cube as ImageData class instance 
 
         :param img_filepath: path to the hyperspectral image file
@@ -503,6 +503,33 @@ class HyperspectralImageData(ImageData):
         logger.info("[ImageData] Hyperspectral image import completed")
 
         return HyperspectralImageData(img_data_calibrated, valid_band_centers, nbands)
+
+    @classmethod
+    def import_hs_img(cls, img_filepath: str) -> HyperspectralImageData:
+        """ Import hyperspectral cube as ImageData class instance 
+
+        :param img_filepath: path to the hyperspectral image file
+        :param panel_data_filepath: path to the csv panel albedo file
+        :param panel_location: panel_location information format [ulx, uly, lrx, lry]
+        :raises NoImageData: when spectral fails to load the image
+        """
+
+        logger.info(f"[ImageData] Beginning import of hyperspectral file {img_filepath}...")
+
+        try:
+            img = spectral.open_image(img_filepath)
+
+        except Exception as e:
+            logger.error(f"[ImageData] Loading hyperspectral data from file {img_filepath} ended with error {e}")
+            raise NoImageData from e
+
+        img_data = img.load()
+        band_centers = img.metadata['wavelength']
+        nbands = img.nbands
+
+        logger.info("[ImageData] Hyperspectral image import completed")
+
+        return HyperspectralImageData(img_data, band_centers, nbands)
 
     @staticmethod
     def perform_radiometric_calibration(filepath: str, metadata: dict[str, str], img_data: np.ndarray,
