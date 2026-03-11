@@ -40,70 +40,32 @@ class DataComparator:
             real_ms_square_mean = ImageData.mean_spectrum_area(self.ms_img_data, real_ms_area_location)
             modeled_ms_square_mean = ImageData.mean_spectrum_area(self.modeled_img_data, modeled_ms_area_location)
 
-            real_ms_ratios = real_ms_square_mean / np.sum(real_ms_square_mean)
-            modeled_ms_ratios = modeled_ms_square_mean / np.sum(modeled_ms_square_mean)
-
         else:
-            if self.ms_img_data.nbands == self.modeled_img_data.nbands:
-
-                if len(real_ms_area_location) != len(modeled_ms_area_location):
-                    InvalidProvidedArea("Area location lists are not of the same size")
-
-                if len(real_ms_area_location) != self.ms_img_data.nbands:
-                    InvalidProvidedArea(
-                        f"Provided area locations ({len(real_ms_area_location)}) does not match the number of bands ({self.ms_img_data.nbands})"
-                    )
-
-                real_ms_square_mean = np.zeros((self.ms_img_data.nbands))
-                modeled_ms_square_mean = np.zeros((self.ms_img_data.nbands))
-
-                for band in range(self.ms_img_data.nbands):
-
-                    real_ms_square_mean[band] = ImageData.mean_spectrum_area(self.ms_img_data.img_data[:, :, band],
-                                                                             real_ms_area_location[band])
-                    modeled_ms_square_mean[band] = ImageData.mean_spectrum_area(
-                        self.modeled_img_data.img_data[:, :, band], modeled_ms_area_location[band])
-
-                real_ms_ratios = real_ms_square_mean / np.sum(real_ms_square_mean)
-                modeled_ms_ratios = modeled_ms_square_mean / np.sum(modeled_ms_square_mean)
-
-            else:
+            if self.ms_img_data.nbands != self.modeled_img_data.nbands:
                 raise ImageDataIncompatible
 
-            logging.info(
-                f"[DataComparator] SQR_mean: {real_ms_square_mean}, SUM: {np.sum(real_ms_square_mean)}, ratios: {real_ms_ratios}"
-            )
-            logging.info(
-                f"[DataComparator] SQR_mean: {modeled_ms_square_mean}, SUM: {np.sum(modeled_ms_square_mean)}, ratios: {modeled_ms_ratios}"
-            )
+            if len(real_ms_area_location) != self.ms_img_data.nbands:
+                raise InvalidProvidedArea(
+                    f"Provided area locations ({len(real_ms_area_location)}) does not match the number of bands ({self.ms_img_data.nbands})"
+                )
 
-            return [real_ms_ratios, modeled_ms_ratios]
+            real_ms_square_mean = np.zeros(self.ms_img_data.nbands)
+            modeled_ms_square_mean = np.zeros(self.ms_img_data.nbands)
 
-    @staticmethod
-    def _find_mean_value_for_square(img_data_array: np.ndarray,
-                                    x_coordinate: int,
-                                    y_coordinate: int,
-                                    square_size: int,
-                                    single_band: bool = False) -> np.ndarray:
-        """ Find mean value for a selected square 
+            for band in range(self.ms_img_data.nbands):
+                real_ms_square_mean[band] = ImageData.mean_spectrum_area(self.ms_img_data.img_data[:, :, band],
+                                                                         real_ms_area_location[band])[0]
+                modeled_ms_square_mean[band] = ImageData.mean_spectrum_area(self.modeled_img_data.img_data[:, :, band],
+                                                                            modeled_ms_area_location[band])[0]
 
-        x_coordinate
-        y_coordinate
-        square_size
-        :return: 
-        """
+        real_ms_ratios = real_ms_square_mean / np.sum(real_ms_square_mean)
+        modeled_ms_ratios = modeled_ms_square_mean / np.sum(modeled_ms_square_mean)
 
-        if single_band:
+        logging.info(
+            f"[DataComparator] SQR_mean: {real_ms_square_mean}, SUM: {np.sum(real_ms_square_mean)}, ratios: {real_ms_ratios}"
+        )
+        logging.info(
+            f"[DataComparator] SQR_mean: {modeled_ms_square_mean}, SUM: {np.sum(modeled_ms_square_mean)}, ratios: {modeled_ms_ratios}"
+        )
 
-            values_of_selected_pixels = img_data_array[
-                x_coordinate:x_coordinate + square_size,
-                y_coordinate:y_coordinate + square_size,
-            ]
-
-        else:
-            values_of_selected_pixels = img_data_array[x_coordinate:x_coordinate + square_size,
-                                                       y_coordinate:y_coordinate + square_size, :]
-
-        mean_values = values_of_selected_pixels.mean(axis=(0, 1))
-
-        return mean_values
+        return [real_ms_ratios, modeled_ms_ratios]
