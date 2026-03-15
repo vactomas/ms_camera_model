@@ -27,5 +27,9 @@ class NoProvidedArea(Exception):
     """ No area was provided """
 
 
+class InvalidProvidedArea(Exception):
+    """ Provided area is invalid """
+
+
 class NoDarkFrame(Exception):
     """ No embedded dark frame found """

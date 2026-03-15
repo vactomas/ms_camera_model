@@ -17,8 +17,7 @@ import micasense.utils as msutils
 import numpy as np
 import pandas as pd
 import spectral
-from skimage import exposure, img_as_float
-from skimage.transform import PiecewiseAffineTransform, warp
+from skimage import img_as_float
 
 from .errors import (
     ImageDataIncompatible,
@@ -49,8 +48,8 @@ class ImageData:
     """
 
     img_data: np.ndarray
-    band_centers: list[float] | None = None
-    nbands: int | None = None
+    band_centers: list[float]
+    nbands: int
 
     def __add__(self, other: ImageData) -> ImageData:
         """ Addition of two ImageData classes 
@@ -155,7 +154,7 @@ class ImageData:
         logger.info("[ImageData] Vector normalization completed")
 
     @staticmethod
-    def mean_spectrum_area(img: np.ndarray, corner_coords: list[int]) -> np.ndarray:
+    def mean_spectrum_area(img: np.ndarray, corner_coords: tuple[int, int, int, int]) -> np.ndarray:
         """ Calculate mean over spectral bands for select area
 
         :param img: image data
@@ -175,160 +174,67 @@ class ImageData:
 
         return mean_spectrum
 
-    def register_bands(self,
-                       other: ImageData | int,
-                       band_mask_paths_ref: list[str | None] | None = None,
-                       band_mask_paths_src: list[str | None] | None = None) -> ImageData | None:
-        """ Register img_data of another ImageData class instance against this instance 
-
-        :param other: ImageData class instance that is being registered against this one
-        :param band_mask_paths_ref: list of mask file paths for reference images
-        :param band_mask_paths_src: list of mask file paths for source images
-        :raises ImageDataIncompatible: if the number of bands differs in self and other
-        """
-
-        logger.info("[ImageData] Starting image registration...")
-
-        if type(other) is not int:
-
-            if self.nbands != other.nbands:
-                logger.info(
-                    f"[ImageData] Provided ImageData instances have incompatible number of bands ({self.nbands} vs {other.nbands})"
-                )
-                raise ImageDataIncompatible
-
-            if other.img_data.size == 0:
-                logger.info("[ImageData] other.img_data is empty")
-                raise NoImageData
-
-        if self.img_data.size == 0:
-            logger.info("[ImageData] self.img_data is empty")
-            raise NoImageData
-
-        registered_img_data = np.zeros((self.img_data.shape[0], self.img_data.shape[1], self.img_data.shape[2]),
-                                       dtype=np.float64)
-
-        for i_band in range(self.nbands):
-            logger.info(f"[ImageData] Registering band {i_band} out of {self.nbands}...")
-
-            registered_img_data[:, :, i_band] = self._register_band(other, i_band, band_mask_paths_ref,
-                                                                    band_mask_paths_src)
-
-        logger.info(f"[ImageData] Image registration completed")
-
-        if type(other) is int:
-            return ImageData(registered_img_data, self.band_centers, self.nbands)
-        else:
-            return ImageData(registered_img_data, other.band_centers, other.nbands)
-
-    def _register_band(self, other: ImageData | int, i_band: int, band_mask_paths_ref: list[str | None] | None,
-                       band_mask_paths_src: list[str | None] | None) -> np.ndarray | None:
-        """ Register single band """
-
-        transformed_img = np.zeros((self.img_data.shape[0], self.img_data.shape[1]), dtype=np.float64)
-
-        img_ref = self.img_data[:, :, i_band]
-
-        if type(other) is int:
-            img_src = self.img_data[:, :, other]
-        else:
-            img_src = other.img_data[:, :, i_band]
-
-        if band_mask_paths_ref:
-            if band_mask_paths_ref[i_band]:
-                logger.info(f"[ImageData] Using ref image mask: {band_mask_paths_ref[i_band]}")
-                mask_ref = cv.imread(band_mask_paths_ref[i_band], cv.IMREAD_GRAYSCALE)
-            else:
-                mask_ref = None
-        else:
-            mask_ref = None
-
-        if band_mask_paths_src:
-            if band_mask_paths_src[i_band]:
-                logger.info(f"[ImageData] Using src image mask: {band_mask_paths_src[i_band]}")
-                mask_src = cv.imread(band_mask_paths_src[i_band], cv.IMREAD_GRAYSCALE)
-            else:
-                mask_src = None
-        else:
-            mask_src = None
-
-        img_ref_exp_comp = exposure.equalize_hist(img_ref)
-        img_src_exp_comp = exposure.equalize_hist(img_src)
-        # img_ref_exp_comp = exposure.rescale_intensity(img_ref_exp_comp, in_range=(0, 100), out_range=(0, 1))
-        # img_src_exp_comp = exposure.rescale_intensity(img_src_exp_comp, in_range=(0, 100), out_range=(0, 1))
-
-        img_ref_calc = cv.normalize(img_ref_exp_comp, None, 255, 0, cv.NORM_MINMAX, cv.CV_8U)
-        img_src_calc = cv.normalize(img_src_exp_comp, None, 255, 0, cv.NORM_MINMAX, cv.CV_8U)
-
-        finder = cv.AKAZE_create(threshold=0.000001)
-        kp_ref, des_ref = finder.detectAndCompute(img_ref_calc, mask_ref)
-        kp_src, des_src = finder.detectAndCompute(img_src_calc, mask_src)
-        logger.info(f"[ImageData] Found {len(kp_ref)} points in reference image and {len(kp_src)} in source image.")
-
-        matcher = cv.BFMatcher(cv.NORM_HAMMING, crossCheck=False)
-        matches = matcher.knnMatch(des_ref, des_src, k=2)
-        logger.info(f"[ImageData] Found {len(matches)} matches while registering band {i_band}")
-
-        good_matches = []
-
-        for m, n in matches:
-            if m.distance < 0.75 * n.distance:
-                good_matches.append(m)
-
-        logger.info(f"[ImageData] Out of these, {len(good_matches)} are good")
-
-        p1 = np.float32([kp_ref[m.queryIdx].pt
-                         for m in good_matches])  #.reshape(-1, 1, 2)
-        p2 = np.float32([kp_src[m.trainIdx].pt
-                         for m in good_matches])  #.reshape(-1, 1, 2)
-
-        img_matches = cv.drawMatches(img_ref_calc,
-                                     kp_ref,
-                                     img_src_calc,
-                                     kp_src,
-                                     good_matches,
-                                     None,
-                                     flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
-        plt.figure(figsize=(15, 5))
-        plt.imshow(img_matches)
-        plt.title('Feature Matches')
-        plt.show()
-
-        homography, inliers = cv.findHomography(p2, p1, cv.RANSAC, 2.5)
-
-        if homography is None or inliers is None:
-            logger.warning(f"[ImageData] Couldn't find homography for band {i_band}, skipping...")
-            return transformed_img
-
-        try:
-            # transformed_img[:, :] = cv.warpPerspective(img_src, homography, (img_ref.shape[1], img_ref.shape[0]))
-            p1 = p1[inliers.flatten() == 1]
-            p2 = p2[inliers.flatten() == 1]
-
-            tform = PiecewiseAffineTransform()
-            tform.estimate(p1, p2)
-
-            rows, cols = img_ref.shape[:2]
-
-            transformed_img = warp(img_src, tform, output_shape=(rows, cols), order=1, mode='edge')
-
-            if img_ref.dtype == np.uint8:
-                transformed_img = (transformed_img * 255).astype(np.uint8)
-            elif img_ref.dtype == np.uint16:
-                transformed_img = (transformed_img * 65535).astype(np.uint16)
-
-            return transformed_img
-
-        except Exception as ex:
-            logger.critical(f"[ImageData] Warping perspective for band {i_band} failed: {ex}")
-            return None
-
     def normalize_img_data(self) -> None:
         """ Normalize image data """
 
         max_value = np.max(self.img_data)
 
         self.img_data = self.img_data / max_value
+
+
+@dataclass(frozen=True)
+class AreaLocation:
+    """ Area location value object with checks """
+
+    ulx: int
+    uly: int
+    lrx: int
+    lry: int
+
+    def __post_init__(self) -> None:
+        """ Post init for checking coordinates """
+
+        if self.ulx > self.lrx:
+            raise ValueError(f"Upper-left X ({self.ulx}) must be <= Lower-right X ({self.lrx})")
+        if self.uly > self.lry:
+            raise ValueError(f"Upper-left Y ({self.uly}) must be <= Lower-right Y ({self.lry})")
+
+    def as_tuple(self) -> tuple[int, int, int, int]:
+        """ Return in openCV compatible format """
+
+        return (self.ulx, self.uly, self.lrx, self.lry)
+
+
+@dataclass
+class ModeledMultispectralImageData(ImageData):
+    """ Modeled Multispectral Image Data - modeled from HS data
+
+    :method perform_radiometric_calibration: method for performing radiometric calibration against known panel
+    """
+
+    band_names: list[str]
+
+    def perform_radiometric_calibration(self, panel_calibration: dict[str, float],
+                                        panel_locations: list[AreaLocation]) -> ModeledMultispectralImageData:
+        """ Perform radiometric calibration on the modeled multispectral image data
+
+        :param panel_calibration: panel_calibration data of used MicaSense CRP
+        :param panel_location: list of AreaLocation objects
+        """
+
+        calibrated_img_data = np.zeros_like(self.img_data)
+
+        for i_band in range(self.img_data.shape[2]):
+            logger.info(f"Performin radiometric calibration for modeled band {i_band}")
+
+            mean_radiance = ImageData.mean_spectrum_area(self.img_data[:, :, i_band],
+                                                         panel_locations[i_band].as_tuple())
+            panel_reflectance = panel_calibration[self.band_names[i_band]]
+            radiance_to_reflectance = panel_reflectance / mean_radiance
+
+            calibrated_img_data[:, :, i_band] = self.img_data[:, :, i_band] * radiance_to_reflectance
+
+        return ModeledMultispectralImageData(calibrated_img_data, self.band_centers, self.nbands, self.band_names)
 
 
 @dataclass
@@ -342,12 +248,12 @@ class MultispectralImageData(ImageData):
 
     @classmethod
     def import_altum_pt_ms_imgs(cls, filepaths: list[str], panel_calibration: dict[str, float],
-                                panel_location: list[list[int]]) -> MultispectralImageData:
+                                panel_locations: list[AreaLocation]) -> MultispectralImageData:
         """ Import and pre-process Altum PT images 
 
         :param filepaths: list of filepaths to the multispectral images, their order determines order in the final array
         :param panel_calibration: panel_calibration data of used MicaSense CRP
-        :param panel_location: panel_location information format [[ulx, uly, lrx, lry], [ulx, ...]]
+        :param panel_location: list of AreaLocation objects
         :raises NoProvidedArea: when the provided area of the CRP is None or empty
         :raises Exception: when the length of filepaths and panel_locations doesn't match
         :raises TypeError: when provided paths aren't in list
@@ -357,10 +263,10 @@ class MultispectralImageData(ImageData):
 
         logger.info("[ImageData] Beginning import of multispectral images...")
 
-        if not len(panel_location) == len(filepaths):
+        if not len(panel_locations) == len(filepaths):
             raise Exception("Number of image filepaths doesn't match number of calibration panel coordinates")
 
-        if not panel_location or panel_location is None:
+        if not panel_locations or panel_locations is None:
             raise NoProvidedArea("No provided coordinates for calibration panel")
 
         MultispectralImageData.check_filepaths(filepaths)
@@ -383,7 +289,7 @@ class MultispectralImageData(ImageData):
 
             radiance_img, *_ = msutils.raw_image_to_radiance(meta, img_raw)
 
-            coordinates = panel_location[i_img]
+            coordinates = panel_locations[i_img].as_tuple()
             mean_radiance = ImageData.mean_spectrum_area(radiance_img, coordinates)
 
             band_name = meta.get_item('XMP:BandName')
@@ -472,8 +378,40 @@ class HyperspectralImageData(ImageData):
     """
 
     @classmethod
-    def import_hs_img(cls, img_filepath: str, panel_data_filepath: str,
-                      panel_location: list[int]) -> HyperspectralImageData:
+    def import_calibrated_hs_img(cls, img_filepath: str, panel_data_filepath: str,
+                                 panel_location: AreaLocation) -> HyperspectralImageData:
+        """ Import hyperspectral cube as ImageData class instance 
+
+        :param img_filepath: path to the hyperspectral image file
+        :param panel_data_filepath: path to the csv panel albedo file
+        :param panel_location: AreaLocation object
+        :raises NoImageData: when spectral fails to load the image
+        """
+
+        logger.info(f"[ImageData] Beginning import of hyperspectral file {img_filepath}...")
+
+        try:
+            img = spectral.open_image(img_filepath)
+
+        except Exception as e:
+            logger.error(f"[ImageData] Loading hyperspectral data from file {img_filepath} ended with error {e}")
+            raise NoImageData from e
+
+        img_data = img.load()
+        metadata = img.metadata
+
+        img_data_calibrated, valid_band_centers = HyperspectralImageData.perform_radiometric_calibration(
+            panel_data_filepath, metadata, img_data, panel_location.as_tuple())
+
+        nbands = img_data_calibrated.shape[2]
+        valid_band_centers = list(map(float, valid_band_centers))
+
+        logger.info("[ImageData] Hyperspectral image import completed")
+
+        return HyperspectralImageData(img_data_calibrated, valid_band_centers, nbands)
+
+    @classmethod
+    def import_hs_img(cls, img_filepath: str) -> HyperspectralImageData:
         """ Import hyperspectral cube as ImageData class instance 
 
         :param img_filepath: path to the hyperspectral image file
@@ -492,21 +430,16 @@ class HyperspectralImageData(ImageData):
             raise NoImageData from e
 
         img_data = img.load()
-        metadata = img.metadata
-
-        img_data_calibrated, valid_band_centers = HyperspectralImageData.perform_radiometric_calibration(
-            panel_data_filepath, metadata, img_data, panel_location)
-
-        nbands = img_data_calibrated.shape[2]
-        valid_band_centers = list(map(float, valid_band_centers))
+        band_centers = img.metadata['wavelength']
+        nbands = img.nbands
 
         logger.info("[ImageData] Hyperspectral image import completed")
 
-        return HyperspectralImageData(img_data_calibrated, valid_band_centers, nbands)
+        return HyperspectralImageData(img_data, band_centers, nbands)
 
     @staticmethod
     def perform_radiometric_calibration(filepath: str, metadata: dict[str, str], img_data: np.ndarray,
-                                        panel_location: list[int]) -> tuple[np.ndarray, np.ndarray]:
+                                        panel_location: tuple[int, int, int, int]) -> tuple[np.ndarray, np.ndarray]:
         """ Perform radiometric calibration based on calibration plate with known albedo
 
         :param filepath: path to the wavelength-albedo csv file

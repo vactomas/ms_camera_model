@@ -9,7 +9,7 @@ Multispectral Camera Model - Filters and Sensors
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -41,7 +41,7 @@ class FilterSensorUnit:
     """ Combination of filter and sensor """
     filter_spec: FilterSpecs
     sensor_spec: SensorSpecs
-    combined_attenuation: np.ndarray = field(init=False)
+    combined_attenuation: np.ndarray | None = None
 
     @classmethod
     def from_excel(cls, filename_filter: str, filename_sensor: str) -> FilterSensorUnit:
@@ -58,25 +58,17 @@ class FilterSensorUnit:
         filter_data = pd.read_excel(filename_filter)
         sensor_data = pd.read_excel(filename_sensor)
 
-        filter_spec = FilterSpecs(np.array(filter_data))
-        sensor_spec = SensorSpecs(np.array(sensor_data))
+        try:
+            filter_values = filter_data.values.astype(np.float32)
+            sensor_values = sensor_data.values.astype(np.float32)
+        except ValueError as e:
+            logger.error(f"[FilterSensorUnit] Filter or sensor Excel files contain non-numeric characters: {e}")
+            raise ValueError from e
+
+        filter_spec = FilterSpecs(np.array(filter_values))
+        sensor_spec = SensorSpecs(np.array(sensor_values))
 
         return FilterSensorUnit(filter_spec, sensor_spec)
-
-    def calculate_combined_attenuation(self) -> None:
-        """ Calculate combined attenuation of filter and sensor based on their transmission and qe (quantum efficiency) curve """
-
-        logger.info("[FilterSensorUnit] Calculating combined attenuation")
-        logger.info(
-            f"[FilterSensorUnit] Filter transmission: {self.filter_spec.filter_transmission.shape}, Sensor QE curve: {self.sensor_spec.sensor_qe_curve.shape}"
-        )
-
-        transmission = self.filter_spec.filter_transmission[:, 1]
-        sensor_qe = self.sensor_spec.sensor_qe_curve[:, 1]
-
-        self.combined_attenuation = transmission * sensor_qe
-
-        logger.info(f"[FilterSensorUnit] Combined attenuation: {self.combined_attenuation.shape}")
 
     def interpolate_to_hs_data(self, hs_band_centers: list[float] | None) -> FilterSensorUnit:
         """ Interpolate the provided filter and sensor data to hyperspectral data """
@@ -101,4 +93,7 @@ class FilterSensorUnit:
         interpolated_sensor = SensorSpecs(np.column_stack([hs_band_centers, sensor_interp]), self.sensor_spec.name,
                                           self.sensor_spec.supplier, self.sensor_spec.sensor_type)
 
-        return FilterSensorUnit(interpolated_filter, interpolated_sensor)
+        interpolated_unit = FilterSensorUnit(interpolated_filter, interpolated_sensor)
+        interpolated_unit.combined_attenuation = filter_interp * sensor_interp
+
+        return interpolated_unit

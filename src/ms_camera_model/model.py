@@ -16,7 +16,11 @@ import numpy as np
 
 from ms_camera_model.errors import NoImageData
 from ms_camera_model.filter_sensor import FilterSensorUnit
-from ms_camera_model.image_data import HyperspectralImageData, ImageData
+from ms_camera_model.image_data import (
+    HyperspectralImageData,
+    ImageData,
+    ModeledMultispectralImageData,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +36,8 @@ class MultispectralCameraModel:
     hs_data: HyperspectralImageData
     filter_sensor_units: list[FilterSensorUnit]
     corrected_filter_sensor_units: list[FilterSensorUnit] = field(init=False)
-    out_data: ImageData = field(init=False)
+    band_names: list[str]
+    out_data: ModeledMultispectralImageData = field(init=False)
 
     def run_simulation(self) -> ImageData:
         """ Match filter_sensor_units specs with hs_data band_centers and calculate out_data 
@@ -59,14 +64,12 @@ class MultispectralCameraModel:
         modeled_ms_data_band_centers = []
 
         for i_unit, unit in enumerate(self.corrected_filter_sensor_units):
-            unit.calculate_combined_attenuation()
-            logger.info(f"[MSModel] FS_{i_unit} max combined attenuation is {unit.combined_attenuation.max()}")
             modeled_ms_data[:, :, i_unit] = self._calculate_band(unit)
             modeled_ms_data_band_centers.append(unit.filter_spec.band_center)
 
         logger.info(f"[MSModel] modeled_ms_data max val: {modeled_ms_data.max()}")
-        self.out_data = ImageData(modeled_ms_data, modeled_ms_data_band_centers,
-                                  len(self.corrected_filter_sensor_units))
+        self.out_data = ModeledMultispectralImageData(modeled_ms_data, modeled_ms_data_band_centers,
+                                                      len(self.corrected_filter_sensor_units), self.band_names)
 
     def _filter_sensor_data_matching(self) -> None:
         """ Interpolate filter transmission data to match bands from hyperspectral img data """
@@ -79,7 +82,10 @@ class MultispectralCameraModel:
         self.corrected_filter_sensor_units = corrected_units
 
     def _calculate_band(self, filter_sensor_unit: FilterSensorUnit) -> np.ndarray:
-        """ Calculate the image created by a filter sensor unit """
+        """ Calculate the image created by a filter sensor unit 
+
+        :param filter_sensor_unit: Input FilterSensorUnit
+        """
 
         logger.info("[MSModel] Calculating single band image from hyperspectral data...")
 
