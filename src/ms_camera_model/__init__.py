@@ -14,10 +14,11 @@ from .image_data import (
     HyperspectralImageData,
     ImageData,
     MultispectralImageData,
+    PanelLocation,
 )
 from .model import MultispectralCameraModel
 
 __all__ = [
     "DataComparator", "FilterSensorUnit", "FilterSpecs", "SensorSpecs", "HyperspectralImageData", "ImageData",
-    "MultispectralImageData", "MultispectralCameraModel"
+    "MultispectralImageData", "PanelLocation", "MultispectralCameraModel"
 ]
