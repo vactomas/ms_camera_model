@@ -11,14 +11,14 @@ __version__ = "0.1.0"
 from .data_comparison import DataComparator
 from .filter_sensor import FilterSensorUnit, FilterSpecs, SensorSpecs
 from .image_data import (
+    AreaLocation,
     HyperspectralImageData,
     ImageData,
     MultispectralImageData,
-    PanelLocation,
 )
 from .model import MultispectralCameraModel
 
 __all__ = [
     "DataComparator", "FilterSensorUnit", "FilterSpecs", "SensorSpecs", "HyperspectralImageData", "ImageData",
-    "MultispectralImageData", "PanelLocation", "MultispectralCameraModel"
+    "MultispectralImageData", "AreaLocation", "MultispectralCameraModel"
 ]

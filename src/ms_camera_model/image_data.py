@@ -183,8 +183,8 @@ class ImageData:
 
 
 @dataclass(frozen=True)
-class PanelLocation:
-    """ Panel location value object with checks """
+class AreaLocation:
+    """ Area location value object with checks """
 
     ulx: int
     uly: int
@@ -215,11 +215,11 @@ class ModeledMultispectralImageData(ImageData):
     band_names: list[str]
 
     def perform_radiometric_calibration(self, panel_calibration: dict[str, float],
-                                        panel_locations: list[PanelLocation]) -> ModeledMultispectralImageData:
+                                        panel_locations: list[AreaLocation]) -> ModeledMultispectralImageData:
         """ Perform radiometric calibration on the modeled multispectral image data
 
         :param panel_calibration: panel_calibration data of used MicaSense CRP
-        :param panel_location: list of PanelLocation objects
+        :param panel_location: list of AreaLocation objects
         """
 
         calibrated_img_data = np.zeros_like(self.img_data)
@@ -248,12 +248,12 @@ class MultispectralImageData(ImageData):
 
     @classmethod
     def import_altum_pt_ms_imgs(cls, filepaths: list[str], panel_calibration: dict[str, float],
-                                panel_locations: list[PanelLocation]) -> MultispectralImageData:
+                                panel_locations: list[AreaLocation]) -> MultispectralImageData:
         """ Import and pre-process Altum PT images 
 
         :param filepaths: list of filepaths to the multispectral images, their order determines order in the final array
         :param panel_calibration: panel_calibration data of used MicaSense CRP
-        :param panel_location: list of PanelLocation objects
+        :param panel_location: list of AreaLocation objects
         :raises NoProvidedArea: when the provided area of the CRP is None or empty
         :raises Exception: when the length of filepaths and panel_locations doesn't match
         :raises TypeError: when provided paths aren't in list
@@ -379,12 +379,12 @@ class HyperspectralImageData(ImageData):
 
     @classmethod
     def import_calibrated_hs_img(cls, img_filepath: str, panel_data_filepath: str,
-                                 panel_location: PanelLocation) -> HyperspectralImageData:
+                                 panel_location: AreaLocation) -> HyperspectralImageData:
         """ Import hyperspectral cube as ImageData class instance 
 
         :param img_filepath: path to the hyperspectral image file
         :param panel_data_filepath: path to the csv panel albedo file
-        :param panel_location: PanelLocation object
+        :param panel_location: AreaLocation object
         :raises NoImageData: when spectral fails to load the image
         """
 
