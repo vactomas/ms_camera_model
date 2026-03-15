@@ -1,0 +1,42 @@
+stages:
+  - deploy
+
+deploy-docs:
+  stage: deploy
+  image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+  variables:
+    UV_CACHE_DIR: ".cache/uv"
+    SSH_USER: "runner"
+    DEST_PATH: "/opt/stacks/caddy/site/docs/"
+  cache:
+    key:
+      files:
+        - pyproject.toml
+    paths:
+      - .cache/uv
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+  before_script:
+    # Install system dependencies
+    - apt-get update && apt-get install -y libgdal-dev g++ libgl1 rsync openssh-client
+    
+    # Configure GDAL environment
+    - export GDAL_VERSION=$(gdal-config --version)
+    - export CPLUS_INCLUDE_PATH=/usr/include/gdal
+    - export C_INCLUDE_PATH=/usr/include/gdal
+    
+    # Sync dependencies
+    - uv add "gdal==${GDAL_VERSION}.*"
+    - uv sync --all-extras --dev
+  script:
+    # Build Docs
+    - uv run sphinx-apidoc -f -o docs/source src/ms_camera_model/
+    - uv run sphinx-build -b html docs/source docs/build/html
+    
+    # Set up SSH and Deploy
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -p "$SSH_PORT" "$VPSHOST" >> ~/.ssh/known_hosts
+    - rsync -avz --delete -e "ssh -p $SSH_PORT" docs/build/html/ "$SSH_USER@$VPSHOST:$DEST_PATH"
