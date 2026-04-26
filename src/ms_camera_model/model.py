@@ -60,7 +60,7 @@ class MultispectralCameraModel:
             raise NoImageData
 
         shape = self.hs_data.img_data.shape
-        modeled_ms_data = np.zeros((shape[0], shape[1], len(self.corrected_filter_sensor_units)))
+        modeled_ms_data = np.zeros((shape[0], shape[1], len(self.corrected_filter_sensor_units)), dtype=np.float32)
         modeled_ms_data_band_centers = []
 
         for i_unit, unit in enumerate(self.corrected_filter_sensor_units):
@@ -89,14 +89,14 @@ class MultispectralCameraModel:
 
         logger.info("[MSModel] Calculating single band image from hyperspectral data...")
 
-        data_through_unit = self.hs_data.img_data * filter_sensor_unit.combined_attenuation
+        data_through_unit = self.hs_data.img_data * filter_sensor_unit.combined_response
         logger.info(f"[MSModel] Max data val: {data_through_unit.max()}")
         logger.info(f"[MSModel] Data type: {data_through_unit.dtype}")
 
         logger.info("[MSModel] Performing trapezoidal integration...")
 
         signal_integral = np.trapezoid(data_through_unit, axis=2)
-        filter_integral = np.trapezoid(filter_sensor_unit.combined_attenuation)
+        filter_integral = np.trapezoid(filter_sensor_unit.combined_response)
 
         out_img = signal_integral / filter_integral
 

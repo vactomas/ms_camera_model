@@ -8,6 +8,7 @@ Dataclasses and their methods for image data
 from __future__ import annotations
 
 import logging
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 import cv2 as cv
@@ -20,7 +21,9 @@ import spectral
 from skimage import img_as_float
 
 from .errors import (
+    AreaOutsideOfBounds,
     ImageDataIncompatible,
+    ImageImportFailed,
     IncompatibleBandChoice,
     NoDarkFrame,
     NoImageData,
@@ -32,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ImageData:
+class ImageData(ABC):
     """ Image Data class 
 
     :param img_data: np.ndarray of image data with shape (rows, cols, bands)
@@ -41,7 +44,6 @@ class ImageData:
 
     :method __add__: add two ImageData classes
     :method imshow: view the img_data as an RGB interpretation of selected bands or as a brightness plot
-    :method vector_normalize: use vector normalization on the img_data
     :method mean_spectrum_area: calculate mean spectrum for a select area
     :method plot_area_spectrum: visualize the mean spectrum of an area
     :method register_images: register img_data of another ImageData class instance against this instance
@@ -50,6 +52,13 @@ class ImageData:
     img_data: np.ndarray
     band_centers: list[float]
     nbands: int
+
+    @abstractmethod
+    def _create_new_instance(self, new_img_data: np.ndarray):
+        """ Create new instance of subclass
+
+        :param new_img_data: """
+        pass
 
     def __add__(self, other: ImageData) -> ImageData:
         """ Addition of two ImageData classes 
@@ -64,7 +73,7 @@ class ImageData:
         if not self.nbands == other.nbands or not self.band_centers == other.band_centers:
             raise ImageDataIncompatible("ImageData objects used for addition are not compatible with each other")
 
-        return ImageData(self.img_data + other.img_data, self.band_centers, self.nbands)
+        return self._create_new_instance(self.img_data + other.img_data)
 
     def imshow(self, bands: list[int] | None = None) -> None:
         """ View image as an RGB interpretation of selected bands or as a brightness plot
@@ -74,9 +83,18 @@ class ImageData:
         """
 
         if not bands:
-            bands = []
+            logger.info("[ImageData] Showing image as a brightness plot")
 
-        if len(bands) == 3:
+            non_empty_bands = self.img_data.max(axis=(0, 1)) > 1e-2
+            bands = [i for i, x in enumerate(non_empty_bands) if x]
+            plot_data = self.img_data[:, :, (bands)]
+            plot_data = plot_data.sum(axis=2)
+            plot_data /= len(bands)
+            plot_data *= (1.0 / plot_data.max())
+
+            plt.imshow(plot_data, cmap='gray', vmin=0.0, vmax=1.0)
+
+        elif len(bands) == 3:
             logger.info(
                 f"[ImageData] Showing RGB interpretation from bands -> R:{bands[0]}, G:{bands[1]}, B:{bands[2]}")
 
@@ -95,32 +113,22 @@ class ImageData:
             logger.info(f"[ImageData] Showing band -> {bands[0]}")
 
             plot_band_list = [bands[0]]
-            plot_data = self.img_data[:, :, (plot_band_list)]
+            plot_data = self.img_data[:, :, plot_band_list]
 
             plot_data[:, :, 0] *= (1.0 / plot_data[:, :, 0].max())
 
             plt.imshow(plot_data)
 
-        elif bands == []:
-            logger.info("[ImageData] Showing image as a brightness plot")
-
-            non_empty_bands = self.img_data.max(axis=(0, 1)) > 1e-2
-            bands = [i for i, x in enumerate(non_empty_bands) if x]
-            plot_data = self.img_data[:, :, (bands)]
-            plot_data = plot_data.sum(axis=2)
-            plot_data /= len(bands)
-            plot_data *= (1.0 / plot_data.max())
-
-            plt.imshow(plot_data, cmap='gray', vmin=0.0, vmax=1.0)
-
         else:
-            logger.info(f"[ImageData] Wrong band choice was provided. Expected [] or len(bands) == 3, got {bands}")
+            logger.error(
+                f"[ImageData] Wrong band choice was provided. Expected [], len(bands) == 1 or len(bands) == 3, got {bands}"
+            )
             raise IncompatibleBandChoice
 
-    def plot_area_spectrum(self, coordinates: list[int]) -> None:
+    def plot_area_spectrum(self, coordinates: tuple[int, int, int, int]) -> None:
         """ Plot spectrum of pixels 
 
-        :param coordinates: list[ulx, uly, lrx, lry] - ulx means upper left x, lry means lower right y, etc.
+        :param coordinates: coordinates of corners of the area in format [ulx, uly, lrx, lry] - ulx means upper left x, lry means lower right y, etc.
         """
 
         logger.info(
@@ -133,25 +141,10 @@ class ImageData:
 
         area_data = self.mean_spectrum_area(self.img_data, coordinates)
         plt.plot(self.band_centers, area_data, label="Spectral response")
-        plt.xlabel("Band")
-        plt.ylabel("Reflectance")
+        plt.xlabel("Wavelength [nm]", fontsize=20, fontweight='bold', labelpad=10)
+        plt.ylabel("Reflectance [-]", fontsize=20, fontweight='bold', labelpad=10)
 
-    def vector_normalize(self) -> None:
-        """ Normalize img data """
-
-        logger.info("[ImageData] Performing vector normalization on the img_data...")
-
-        pixels = self.img_data.reshape(-1, self.img_data.shape[2])
-        norms = np.linalg.norm(pixels, axis=1)
-
-        # Avoid division by zero for pixels with a norm of 0
-        norms[norms == 0] = 1e-10
-
-        # Divide each pixel's spectrum by its norm
-        normalized_pixels = pixels / norms[:, np.newaxis]
-        self.img_data = normalized_pixels.reshape(self.img_data.shape)
-
-        logger.info("[ImageData] Vector normalization completed")
+        plt.tick_params(axis='both', which='major', labelsize=18)
 
     @staticmethod
     def mean_spectrum_area(img: np.ndarray, corner_coords: tuple[int, int, int, int]) -> np.ndarray:
@@ -165,6 +158,11 @@ class ImageData:
 
         ulx, uly, lrx, lry = corner_coords
 
+        shape = img.shape
+
+        if lrx > shape[1] or lry > shape[0]:
+            raise AreaOutsideOfBounds(f"Area bounds exceeded. Coordinates x:{lrx}, y:{lry} outside of {shape}")
+
         logger.info(f"[ImageData] Calculating mean for area x: {ulx}-{lrx}, y: {uly}-{lry}...")
 
         pixel_spectrum = img_3d[uly:lry, ulx:lrx, :]
@@ -173,13 +171,6 @@ class ImageData:
         logger.info("[ImageData] Mean calculation for selected area completed")
 
         return mean_spectrum
-
-    def normalize_img_data(self) -> None:
-        """ Normalize image data """
-
-        max_value = np.max(self.img_data)
-
-        self.img_data = self.img_data / max_value
 
 
 @dataclass(frozen=True)
@@ -194,9 +185,11 @@ class AreaLocation:
     def __post_init__(self) -> None:
         """ Post init for checking coordinates """
 
-        if self.ulx > self.lrx:
+        if self.ulx < 0 or self.lry < 0:
+            raise ValueError("Area coordinates cannot be negative.")
+        if self.ulx >= self.lrx:
             raise ValueError(f"Upper-left X ({self.ulx}) must be <= Lower-right X ({self.lrx})")
-        if self.uly > self.lry:
+        if self.uly >= self.lry:
             raise ValueError(f"Upper-left Y ({self.uly}) must be <= Lower-right Y ({self.lry})")
 
     def as_tuple(self) -> tuple[int, int, int, int]:
@@ -214,6 +207,9 @@ class ModeledMultispectralImageData(ImageData):
 
     band_names: list[str]
 
+    def _create_new_instance(self, new_img_data: np.ndarray) -> ModeledMultispectralImageData:
+        return ModeledMultispectralImageData(new_img_data, self.band_centers, self.nbands, self.band_names)
+
     def perform_radiometric_calibration(self, panel_calibration: dict[str, float],
                                         panel_locations: list[AreaLocation]) -> ModeledMultispectralImageData:
         """ Perform radiometric calibration on the modeled multispectral image data
@@ -222,10 +218,10 @@ class ModeledMultispectralImageData(ImageData):
         :param panel_location: list of AreaLocation objects
         """
 
-        calibrated_img_data = np.zeros_like(self.img_data)
+        calibrated_img_data = np.zeros_like(self.img_data, dtype=np.float32)
 
         for i_band in range(self.img_data.shape[2]):
-            logger.info(f"Performin radiometric calibration for modeled band {i_band}")
+            logger.info(f"Performing radiometric calibration for modeled band {i_band}")
 
             mean_radiance = ImageData.mean_spectrum_area(self.img_data[:, :, i_band],
                                                          panel_locations[i_band].as_tuple())
@@ -234,7 +230,7 @@ class ModeledMultispectralImageData(ImageData):
 
             calibrated_img_data[:, :, i_band] = self.img_data[:, :, i_band] * radiance_to_reflectance
 
-        return ModeledMultispectralImageData(calibrated_img_data, self.band_centers, self.nbands, self.band_names)
+        return self._create_new_instance(calibrated_img_data)
 
 
 @dataclass
@@ -245,6 +241,9 @@ class MultispectralImageData(ImageData):
     :method import_ms_imgs: method for import of generic multispectral images
     :method check_filepaths: method which checks that filepaths are a non-empty list and are strings
     """
+
+    def _create_new_instance(self, new_img_data: np.ndarray) -> MultispectralImageData:
+        return MultispectralImageData(new_img_data, self.band_centers, self.nbands)
 
     @classmethod
     def import_altum_pt_ms_imgs(cls, filepaths: list[str], panel_calibration: dict[str, float],
@@ -264,9 +263,10 @@ class MultispectralImageData(ImageData):
         logger.info("[ImageData] Beginning import of multispectral images...")
 
         if not len(panel_locations) == len(filepaths):
-            raise Exception("Number of image filepaths doesn't match number of calibration panel coordinates")
+            raise ImageDataIncompatible(
+                "Number of image filepaths doesn't match number of calibration panel coordinates")
 
-        if not panel_locations or panel_locations is None:
+        if not panel_locations:
             raise NoProvidedArea("No provided coordinates for calibration panel")
 
         MultispectralImageData.check_filepaths(filepaths)
@@ -281,9 +281,10 @@ class MultispectralImageData(ImageData):
                 img_raw = cv.imread(image_filepath, cv.IMREAD_UNCHANGED)
 
             except Exception as e:
-                logger.warning(
-                    f"[ImageData] Error {e} occured while reading image from file {image_filepath}. Skipping...")
-                continue
+                raise ImageImportFailed(f"Error {e} occured while reading image from file {image_filepath}.") from e
+
+            if img_raw is None:
+                raise NoImageData(f"Image read from {image_filepath} resulted in empty array.")
 
             meta = metadata.Metadata(image_filepath)
 
@@ -299,7 +300,7 @@ class MultispectralImageData(ImageData):
 
             reflectance_img = radiance_img * radiance_to_reflectance
 
-            loaded_images.append(img_as_float(reflectance_img))
+            loaded_images.append(img_as_float(reflectance_img).astype(np.float32))
 
         if not loaded_images:
             raise NoImageData("No image data was loaded from provided filepaths")
@@ -309,7 +310,7 @@ class MultispectralImageData(ImageData):
         img_data = np.stack(loaded_images, axis=-1)
         nbands = len(loaded_images)
 
-        return MultispectralImageData(img_data, band_centers, nbands)
+        return cls(img_data, band_centers, nbands)
 
     @classmethod
     def import_ms_imgs(cls, filepaths: list[str]) -> MultispectralImageData:
@@ -334,11 +335,12 @@ class MultispectralImageData(ImageData):
                 img = cv.imread(image_filepath, cv.IMREAD_UNCHANGED)
 
             except Exception as e:
-                logger.warning(
-                    f"[ImageData] Error {e} occured while reading image from file {image_filepath}. Skipping...")
-                continue
+                raise ImageImportFailed(f"Error {e} occured while reading image from file {image_filepath}.") from e
 
-            loaded_images.append(img_as_float(img))
+            if img is None:
+                raise NoImageData(f"Image read from {image_filepath} resulted in empty array.")
+
+            loaded_images.append(img_as_float(img).astype(np.float32))
 
         if not loaded_images:
             raise NoImageData("No image data was loaded from provided filepaths")
@@ -348,7 +350,7 @@ class MultispectralImageData(ImageData):
 
         logger.info("[ImageData] Import of multispectral images completed")
 
-        return MultispectralImageData(img_data, nbands=nbands)
+        return cls(img_data, band_centers=[], nbands=nbands)
 
     @staticmethod
     def check_filepaths(filepaths: list[str]) -> None:
@@ -377,6 +379,9 @@ class HyperspectralImageData(ImageData):
     :method import_hs_img: Import hyperspectral cube into img_data, band_centers and nbands
     """
 
+    def _create_new_instance(self, new_img_data: np.ndarray) -> HyperspectralImageData:
+        return HyperspectralImageData(new_img_data, self.band_centers, self.nbands)
+
     @classmethod
     def import_calibrated_hs_img(cls, img_filepath: str, panel_data_filepath: str,
                                  panel_location: AreaLocation) -> HyperspectralImageData:
@@ -388,6 +393,9 @@ class HyperspectralImageData(ImageData):
         :raises NoImageData: when spectral fails to load the image
         """
 
+        if not img_filepath:
+            raise NoProvidedFilepaths
+
         logger.info(f"[ImageData] Beginning import of hyperspectral file {img_filepath}...")
 
         try:
@@ -397,18 +405,18 @@ class HyperspectralImageData(ImageData):
             logger.error(f"[ImageData] Loading hyperspectral data from file {img_filepath} ended with error {e}")
             raise NoImageData from e
 
-        img_data = img.load()
+        img_data = img.load().astype(np.float32)
         metadata = img.metadata
 
         img_data_calibrated, valid_band_centers = HyperspectralImageData.perform_radiometric_calibration(
-            panel_data_filepath, metadata, img_data, panel_location.as_tuple())
+            panel_data_filepath, metadata, img_data, panel_location)
 
         nbands = img_data_calibrated.shape[2]
         valid_band_centers = list(map(float, valid_band_centers))
 
         logger.info("[ImageData] Hyperspectral image import completed")
 
-        return HyperspectralImageData(img_data_calibrated, valid_band_centers, nbands)
+        return cls(img_data_calibrated, valid_band_centers, nbands)
 
     @classmethod
     def import_hs_img(cls, img_filepath: str) -> HyperspectralImageData:
@@ -420,6 +428,9 @@ class HyperspectralImageData(ImageData):
         :raises NoImageData: when spectral fails to load the image
         """
 
+        if not img_filepath:
+            raise NoProvidedFilepaths
+
         logger.info(f"[ImageData] Beginning import of hyperspectral file {img_filepath}...")
 
         try:
@@ -429,25 +440,32 @@ class HyperspectralImageData(ImageData):
             logger.error(f"[ImageData] Loading hyperspectral data from file {img_filepath} ended with error {e}")
             raise NoImageData from e
 
-        img_data = img.load()
+        img_data = img.load().astype(np.float32)
         band_centers = img.metadata['wavelength']
         nbands = img.nbands
 
         logger.info("[ImageData] Hyperspectral image import completed")
 
-        return HyperspectralImageData(img_data, band_centers, nbands)
+        return cls(img_data, band_centers, nbands)
 
     @staticmethod
-    def perform_radiometric_calibration(filepath: str, metadata: dict[str, str], img_data: np.ndarray,
-                                        panel_location: tuple[int, int, int, int]) -> tuple[np.ndarray, np.ndarray]:
+    def perform_radiometric_calibration(filepath: str,
+                                        metadata: dict[str, str],
+                                        img_data: np.ndarray,
+                                        panel_location: AreaLocation,
+                                        snr_multiplier: float = 5.0) -> tuple[np.ndarray, np.ndarray]:
         """ Perform radiometric calibration based on calibration plate with known albedo
 
         :param filepath: path to the wavelength-albedo csv file
         :param metadata: dict with hyperspectral data metadata
         :param img_data: np.ndarray of image data with shape (rows, cols, bands)
         :param panel_location: panel_location information format [ulx, uly, lrx, lry]
+        :param snr_multiplier: multiplier for snr check
         :return: calibrated numpy img_data array
         """
+
+        if not filepath:
+            raise NoProvidedFilepaths
 
         panel_calibration = pd.read_csv(filepath)
         panel_wavelengths = panel_calibration.iloc[:, 0].values
@@ -466,23 +484,24 @@ class HyperspectralImageData(ImageData):
         dark_frame_mean = np.mean(dark_frame, axis=0)
 
         dark_noise_sigma = np.std(dark_frame, axis=(0, 1))
-        snr_threshold = 5.0 * dark_noise_sigma
+        snr_threshold = snr_multiplier * dark_noise_sigma
 
         valid_data = img_data[:dark_frame_start, :, band_data_mask] - dark_frame_mean
 
         valid_wavelengths = hs_data_wavelengths[band_data_mask]
 
-        white_reference = ImageData.mean_spectrum_area(valid_data, panel_location)
+        white_reference = ImageData.mean_spectrum_area(valid_data, panel_location.as_tuple())
 
         valid_bands_mask = white_reference > snr_threshold
         dropped_bands_count = np.sum(~valid_bands_mask)
         if dropped_bands_count > 0:
             logger.warning(
-                f"[RadiometricCalibration] Dropped {dropped_bands_count} bands due to failing the 5-sigma SNR check.")
+                f"[RadiometricCalibration] Dropped {dropped_bands_count} bands due to failing the {snr_multiplier}-sigma SNR check."
+            )
 
         interpolated_calibration_data = np.interp(valid_wavelengths, panel_wavelengths, panel_reflectance)
 
-        calibration_factor = np.zeros_like(interpolated_calibration_data)
+        calibration_factor = np.zeros_like(interpolated_calibration_data, dtype=np.float32)
         np.divide(interpolated_calibration_data, white_reference, out=calibration_factor, where=valid_bands_mask)
 
         calibrated_data = valid_data * calibration_factor

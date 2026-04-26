@@ -33,3 +33,15 @@ class InvalidProvidedArea(Exception):
 
 class NoDarkFrame(Exception):
     """ No embedded dark frame found """
+
+
+class AreaOutsideOfBounds(Exception):
+    """ The provided area is outside of bounds of the image """
+
+
+class ImageImportFailed(Exception):
+    """ Image import failed """
+
+
+class WavelengthMismatch(Exception):
+    """ Provided filter wavelengths do not match with available hyperspectral image data """
