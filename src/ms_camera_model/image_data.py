@@ -12,7 +12,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 import cv2 as cv
-import matplotlib.pyplot as plt
 import micasense.metadata as metadata
 import micasense.utils as msutils
 import numpy as np
@@ -24,7 +23,6 @@ from .errors import (
     AreaOutsideOfBounds,
     ImageDataIncompatible,
     ImageImportFailed,
-    IncompatibleBandChoice,
     NoDarkFrame,
     NoImageData,
     NoProvidedArea,
@@ -43,10 +41,7 @@ class ImageData(ABC):
     :param nbands: number of bands in the img_data array
 
     :method __add__: add two ImageData classes
-    :method imshow: view the img_data as an RGB interpretation of selected bands or as a brightness plot
     :method mean_spectrum_area: calculate mean spectrum for a select area
-    :method plot_area_spectrum: visualize the mean spectrum of an area
-    :method register_images: register img_data of another ImageData class instance against this instance
     """
 
     img_data: np.ndarray
@@ -70,81 +65,10 @@ class ImageData(ABC):
 
         logger.info("[ImageData] Performing ImageData addition...")
 
-        if not self.nbands == other.nbands or not self.band_centers == other.band_centers:
+        if not self.nbands == other.nbands or not np.allclose(self.band_centers, other.band_centers, atol=1e-3):
             raise ImageDataIncompatible("ImageData objects used for addition are not compatible with each other")
 
         return self._create_new_instance(self.img_data + other.img_data)
-
-    def imshow(self, bands: list[int] | None = None) -> None:
-        """ View image as an RGB interpretation of selected bands or as a brightness plot
-
-        :param bands: list of band numbers, if the list is not provided, brightness plot will be used instead
-        :raises IncompatibleBandChoice: if 'bands' is not [], len(bands) != 3 or the number is out-of-bounds
-        """
-
-        if not bands:
-            logger.info("[ImageData] Showing image as a brightness plot")
-
-            non_empty_bands = self.img_data.max(axis=(0, 1)) > 1e-2
-            bands = [i for i, x in enumerate(non_empty_bands) if x]
-            plot_data = self.img_data[:, :, (bands)]
-            plot_data = plot_data.sum(axis=2)
-            plot_data /= len(bands)
-            plot_data *= (1.0 / plot_data.max())
-
-            plt.imshow(plot_data, cmap='gray', vmin=0.0, vmax=1.0)
-
-        elif len(bands) == 3:
-            logger.info(
-                f"[ImageData] Showing RGB interpretation from bands -> R:{bands[0]}, G:{bands[1]}, B:{bands[2]}")
-
-            plot_band_list = [bands[0], bands[1], bands[2]]
-            plot_data = self.img_data[:, :, (plot_band_list)]
-
-            # Rescale values to range 0.0 - 1.0 for each band individually
-            # for i in range(len(bands)):
-            #     plot_data[:, :, i] *= (1.0 / plot_data[:, :, i].max())
-
-            plot_data /= (plot_data.max(axis=(0, 1)) + 1e-10)
-
-            plt.imshow(plot_data)
-
-        elif len(bands) == 1:
-            logger.info(f"[ImageData] Showing band -> {bands[0]}")
-
-            plot_band_list = [bands[0]]
-            plot_data = self.img_data[:, :, plot_band_list]
-
-            plot_data[:, :, 0] *= (1.0 / plot_data[:, :, 0].max())
-
-            plt.imshow(plot_data)
-
-        else:
-            logger.error(
-                f"[ImageData] Wrong band choice was provided. Expected [], len(bands) == 1 or len(bands) == 3, got {bands}"
-            )
-            raise IncompatibleBandChoice
-
-    def plot_area_spectrum(self, coordinates: tuple[int, int, int, int]) -> None:
-        """ Plot spectrum of pixels 
-
-        :param coordinates: coordinates of corners of the area in format [ulx, uly, lrx, lry] - ulx means upper left x, lry means lower right y, etc.
-        """
-
-        logger.info(
-            f"[ImageData] Plotting mean spectrum of area x {coordinates[0]}:{coordinates[2]}, y {coordinates[1]}:{coordinates[3]}"
-        )
-
-        if self.band_centers is None:
-            logger.error("[ImageData] Cannot plot spectrum - band_centers are missing.")
-            return
-
-        area_data = self.mean_spectrum_area(self.img_data, coordinates)
-        plt.plot(self.band_centers, area_data, label="Spectral response")
-        plt.xlabel("Wavelength [nm]", fontsize=20, fontweight='bold', labelpad=10)
-        plt.ylabel("Reflectance [-]", fontsize=20, fontweight='bold', labelpad=10)
-
-        plt.tick_params(axis='both', which='major', labelsize=18)
 
     @staticmethod
     def mean_spectrum_area(img: np.ndarray, corner_coords: tuple[int, int, int, int]) -> np.ndarray:
@@ -441,7 +365,7 @@ class HyperspectralImageData(ImageData):
             raise NoImageData from e
 
         img_data = img.load().astype(np.float32)
-        band_centers = img.metadata['wavelength']
+        band_centers = list(map(float, img.metadata['wavelength']))
         nbands = img.nbands
 
         logger.info("[ImageData] Hyperspectral image import completed")
@@ -467,9 +391,9 @@ class HyperspectralImageData(ImageData):
         if not filepath:
             raise NoProvidedFilepaths
 
-        panel_calibration = pd.read_csv(filepath)
-        panel_wavelengths = panel_calibration.iloc[:, 0].values
-        panel_reflectance = panel_calibration.iloc[:, 1].values
+        panel_calibration = pd.read_csv(filepath).to_numpy()
+        panel_wavelengths = panel_calibration[:, 0]
+        panel_reflectance = panel_calibration[:, 1]
         panel_validity_start, panel_validity_end = [panel_wavelengths.min(), panel_wavelengths.max()]
 
         if 'autodarkstartline' not in metadata:
