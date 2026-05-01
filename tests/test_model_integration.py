@@ -2,6 +2,7 @@ import pathlib
 import unittest
 
 from ms_camera_model import FilterSensorUnit
+from ms_camera_model.filter_sensor import InterpolatedFilterSensorUnit
 
 TEST_DIR = pathlib.Path(__file__).parent.resolve()
 
@@ -30,15 +31,15 @@ class IntegrationTests(unittest.TestCase):
         hs_band_centers = []
 
         with self.assertRaises(ValueError):
-            fs_unit.interpolate_to_hs_data(hs_band_centers)
+            InterpolatedFilterSensorUnit.interpolate_to_hs_data(fs_unit, hs_band_centers)
 
         hs_band_centers = None
 
         with self.assertRaises(ValueError):
-            fs_unit.interpolate_to_hs_data(hs_band_centers)
+            InterpolatedFilterSensorUnit.interpolate_to_hs_data(fs_unit, hs_band_centers)
 
         hs_band_centers = [1, 1.5, 2]
-        interpolated_fs_unit = fs_unit.interpolate_to_hs_data(hs_band_centers)
+        interpolated_fs_unit = InterpolatedFilterSensorUnit.interpolate_to_hs_data(fs_unit, hs_band_centers)
         interp_result = interpolated_fs_unit.filter_spec.filter_transmittance[1, 0]
 
         self.assertEqual(interp_result, 1.5, msg=f"Expected 1.5, got {interp_result}")

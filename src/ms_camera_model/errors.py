@@ -45,3 +45,7 @@ class ImageImportFailed(Exception):
 
 class WavelengthMismatch(Exception):
     """ Provided filter wavelengths do not match with available hyperspectral image data """
+
+
+class NoProvidedFilterSensorUnits(Exception):
+    """ No provided FilterSensorUnit class instances """

@@ -63,7 +63,6 @@ class FilterSensorUnit:
     """ Combination of filter and sensor """
     filter_spec: FilterSpecs
     sensor_spec: SensorSpecs
-    combined_response: np.ndarray | None = None
 
     @classmethod
     def from_excel(cls, filename_filter: str, filename_sensor: str) -> FilterSensorUnit:
@@ -95,7 +94,15 @@ class FilterSensorUnit:
 
         return FilterSensorUnit(filter_spec, sensor_spec)
 
-    def interpolate_to_hs_data(self, hs_band_centers: list[float]) -> FilterSensorUnit:
+
+@dataclass
+class InterpolatedFilterSensorUnit(FilterSensorUnit):
+    """ FilterSensorUnit interpolated to hyperspectral data """
+    combined_response: np.ndarray | None = None
+
+    @classmethod
+    def interpolate_to_hs_data(cls, fs_unit: FilterSensorUnit,
+                               hs_band_centers: list[float]) -> InterpolatedFilterSensorUnit:
         """ Interpolate the provided filter and sensor data to hyperspectral data """
 
         logger.info("[FilterSensorUnit] Beginning FilterSensorUnit interpolation...")
@@ -106,12 +113,12 @@ class FilterSensorUnit:
         min_hs_centers = min(hs_band_centers)
         max_hs_centers = max(hs_band_centers)
 
-        active_response_mask = self.filter_spec.filter_transmittance[:, 1] > 0.01
+        active_response_mask = fs_unit.filter_spec.filter_transmittance[:, 1] > 0.01
 
         if not np.any(active_response_mask):
-            raise ValueError(f"Filter {self.filter_spec.name} has no passband")
+            raise ValueError(f"Filter {fs_unit.filter_spec.name} has no passband")
 
-        active_response = self.filter_spec.filter_transmittance[active_response_mask]
+        active_response = fs_unit.filter_spec.filter_transmittance[active_response_mask]
 
         min_active_w = np.min(active_response[:, 0])
         max_active_w = np.max(active_response[:, 0])
@@ -121,27 +128,26 @@ class FilterSensorUnit:
                 "The defined filter has active response outside of available hyperspectral data wavelengths")
 
         filter_interp = np.interp(hs_band_centers,
-                                  self.filter_spec.filter_transmittance[:, 0],
-                                  self.filter_spec.filter_transmittance[:, 1],
+                                  fs_unit.filter_spec.filter_transmittance[:, 0],
+                                  fs_unit.filter_spec.filter_transmittance[:, 1],
                                   left=0.0,
                                   right=0.0)
         sensor_interp = np.interp(hs_band_centers,
-                                  self.sensor_spec.sensor_qe_curve[:, 0],
-                                  self.sensor_spec.sensor_qe_curve[:, 1],
+                                  fs_unit.sensor_spec.sensor_qe_curve[:, 0],
+                                  fs_unit.sensor_spec.sensor_qe_curve[:, 1],
                                   left=0.0,
                                   right=0.0)
 
         logger.info(f"[FilterSensorUnit] Filter interp {filter_interp.shape}")
         logger.info(f"[FilterSensorUnit] Sensor interp {sensor_interp.shape}")
 
-        interpolated_filter = FilterSpecs(np.column_stack([hs_band_centers, filter_interp]), self.filter_spec.name,
-                                          self.filter_spec.supplier, self.filter_spec.band_center,
-                                          self.filter_spec.band_width)
+        interpolated_filter = FilterSpecs(np.column_stack([hs_band_centers, filter_interp]), fs_unit.filter_spec.name,
+                                          fs_unit.filter_spec.supplier, fs_unit.filter_spec.band_center,
+                                          fs_unit.filter_spec.band_width)
 
-        interpolated_sensor = SensorSpecs(np.column_stack([hs_band_centers, sensor_interp]), self.sensor_spec.name,
-                                          self.sensor_spec.supplier, self.sensor_spec.sensor_type)
+        interpolated_sensor = SensorSpecs(np.column_stack([hs_band_centers, sensor_interp]), fs_unit.sensor_spec.name,
+                                          fs_unit.sensor_spec.supplier, fs_unit.sensor_spec.sensor_type)
 
-        interpolated_unit = FilterSensorUnit(interpolated_filter, interpolated_sensor)
-        interpolated_unit.combined_response = filter_interp * sensor_interp
+        combined_response = filter_interp * sensor_interp
 
-        return interpolated_unit
+        return InterpolatedFilterSensorUnit(interpolated_filter, interpolated_sensor, combined_response)
