@@ -1,24 +1,21 @@
 stages:
-  - deploy
+  - tests
+  - deploy-docs
 
-deploy-docs:
-  stage: deploy
-  image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
-  variables:
-    UV_CACHE_DIR: ".cache/uv"
-    SSH_USER: "runner"
-    DEST_PATH: "/opt/stacks/caddy/site/docs/"
-  cache:
-    key:
-      files:
-        - pyproject.toml
-    paths:
-      - .cache/uv
-  rules:
-    - if: $CI_COMMIT_BRANCH == "master"
+cache:
+  key:
+    files:
+      - pyproject.toml
+  paths:
+    - .cache/uv
+
+variables:
+  UV_CACHE_DIR: ".cache/uv"
+
+.env_setup: &env_setup
   before_script:
     # Install system dependencies
-    - apt-get update && apt-get install -y libgdal-dev g++ libgl1 rsync openssh-client
+    - apt-get update && apt-get install -y --no-install-recommends libgdal-dev g++ libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 rsync openssh-client
     
     # Configure GDAL environment
     - export GDAL_VERSION=$(gdal-config --version)
@@ -28,6 +25,31 @@ deploy-docs:
     # Sync dependencies
     - uv add "gdal==${GDAL_VERSION}.*"
     - uv sync --all-extras --dev
+
+test-module:
+  stage: tests
+  tags:
+    - docker
+  image:
+    name: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+    pull_policy: [if-not-present, always]
+  <<: *env_setup
+  script:
+    - uv run -m unittest discover -v -s . -p "test_*.py"
+
+deploy-docs:
+  stage: deploy-docs
+  image:
+    name: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+    pull_policy: [if-not-present, always]
+  tags:
+    - docker
+  variables:
+    SSH_USER: "runner"
+    DEST_PATH: "/opt/stacks/caddy/site/docs/"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+  <<: *env_setup
   script:
     # Build Docs
     - uv run sphinx-apidoc -f -o docs/source src/ms_camera_model/

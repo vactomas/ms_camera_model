@@ -54,48 +54,54 @@ ms_panel_location = [
 
 hs_panel_location = AreaLocation(149, 607, 213, 658)
 
-ms_data = MultispectralImageData.import_altum_pt_ms_imgs(ms_paths, panel_calibration, ms_panel_location)
-ms_data.normalize_img_data()
+# ms_data = MultispectralImageData.import_altum_pt_ms_imgs(ms_paths, panel_calibration, ms_panel_location)
+# ms_data.normalize_img_data()
 
 hs_data = HyperspectralImageData.import_calibrated_hs_img(hs_path, panel_data_filepath, hs_panel_location)
 hs_data.normalize_img_data()
+# hs_data.imshow([])
 
-fs_units = []
+spectral_plot_area = AreaLocation(138, 345, 190, 373)
 
-for i, _ in enumerate(ms_paths):
-    fs_unit = FilterSensorUnit.from_excel(filter_paths[i], sensor_paths[i])
-    fs_units.append(fs_unit)
-
-ms_cam_model = MultispectralCameraModel(hs_data, fs_units, band_names)
-ms_cam_model.run_simulation()
-
-data_comparator = DataComparator(ms_data, ms_cam_model.out_data)
-
-real_ms_area_location = [
-    AreaLocation(1170, 680, 1190, 700),
-    AreaLocation(1210, 660, 1230, 680),
-    AreaLocation(1220, 685, 1240, 705),
-    AreaLocation(1200, 665, 1220, 685),
-    AreaLocation(1190, 695, 1210, 715)
-]
-hs_panel_location = AreaLocation(310, 480, 330, 500)
-
-modeled_ms_area_location = [
-    hs_panel_location, hs_panel_location, hs_panel_location, hs_panel_location, hs_panel_location
-]
-
-real_ratios, modeled_ratios = data_comparator.compare_band_ratios(real_ms_area_location,
-                                                                  modeled_ms_area_location,
-                                                                  set_areas_globally=False)
-
-SAM_angle = data_comparator.calculate_spectral_angle_mapper(real_ratios, modeled_ratios)
-logging.info(f"[MAIN] The SAM angle value is {SAM_angle}.")
-
-w, x = 0.4, np.arange(len(real_ratios))
-fig, ax = plt.subplots(2, 2)
-ax[0, 0].imshow(ms_data.img_data[:, :, (2, 1, 0)])
-ax[0, 1].imshow(cv.normalize(ms_cam_model.out_data.img_data[:, :, (2, 1, 0)], None, 255, 0, cv.NORM_MINMAX, cv.CV_8U))
-ax[1, 0].bar(x, real_ratios, width=w, label="Ratios of real MS data")
-ax[1, 1].bar(x, modeled_ratios, width=w, label="Ratios of modeled MS data")
-
+hs_data.plot_area_spectrum(spectral_plot_area.as_tuple())
 plt.show()
+
+# fs_units = []
+#
+# for i, _ in enumerate(ms_paths):
+#     fs_unit = FilterSensorUnit.from_excel(filter_paths[i], sensor_paths[i])
+#     fs_units.append(fs_unit)
+#
+# ms_cam_model = MultispectralCameraModel(hs_data, fs_units, band_names)
+# ms_cam_model.run_simulation()
+#
+# data_comparator = DataComparator(ms_data, ms_cam_model.out_data)
+#
+# real_ms_area_location = [
+#     AreaLocation(1170, 680, 1190, 700),
+#     AreaLocation(1210, 660, 1230, 680),
+#     AreaLocation(1220, 685, 1240, 705),
+#     AreaLocation(1200, 665, 1220, 685),
+#     AreaLocation(1190, 695, 1210, 715)
+# ]
+# hs_panel_location = AreaLocation(310, 480, 330, 500)
+#
+# modeled_ms_area_location = [
+#     hs_panel_location, hs_panel_location, hs_panel_location, hs_panel_location, hs_panel_location
+# ]
+#
+# real_ratios, modeled_ratios = data_comparator.compare_band_ratios(real_ms_area_location,
+#                                                                   modeled_ms_area_location,
+#                                                                   set_areas_globally=False)
+#
+# SAM_angle = data_comparator.calculate_spectral_angle_mapper(real_ratios, modeled_ratios)
+# logging.info(f"[MAIN] The SAM angle value is {SAM_angle}.")
+#
+# w, x = 0.4, np.arange(len(real_ratios))
+# fig, ax = plt.subplots(2, 2)
+# ax[0, 0].imshow(ms_data.img_data[:, :, (2, 1, 0)])
+# ax[0, 1].imshow(cv.normalize(ms_cam_model.out_data.img_data[:, :, (2, 1, 0)], None, 255, 0, cv.NORM_MINMAX, cv.CV_8U))
+# ax[1, 0].bar(x, real_ratios, width=w, label="Ratios of real MS data")
+# ax[1, 1].bar(x, modeled_ratios, width=w, label="Ratios of modeled MS data")
+#
+# plt.show()

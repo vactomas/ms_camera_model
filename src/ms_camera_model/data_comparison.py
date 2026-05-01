@@ -9,7 +9,11 @@ import logging
 
 import numpy as np
 
-from ms_camera_model.errors import ImageDataIncompatible, InvalidProvidedArea
+from ms_camera_model.errors import (
+    ImageDataIncompatible,
+    InvalidProvidedArea,
+    NoProvidedArea,
+)
 from ms_camera_model.image_data import AreaLocation, ImageData
 
 logger = logging.getLogger(__name__)
@@ -37,6 +41,14 @@ class DataComparator:
 
         logging.info("[DataComparator] Preparing comparison...")
 
+        if not real_ms_area_location or not modeled_ms_area_location:
+            raise NoProvidedArea
+
+        if self.ms_img_data.nbands != self.modeled_img_data.nbands:
+            raise ImageDataIncompatible(
+                f"Provided image data has incompatible number of bands ({self.ms_img_data.nbands} vs {self.modeled_img_data.nbands})"
+            )
+
         if set_areas_globally:
 
             if isinstance(real_ms_area_location, list) or isinstance(modeled_ms_area_location, list):
@@ -50,9 +62,6 @@ class DataComparator:
                                                                   modeled_ms_area_location.as_tuple())
 
         else:
-            if self.ms_img_data.nbands != self.modeled_img_data.nbands:
-                raise ImageDataIncompatible
-
             if not isinstance(real_ms_area_location, list) or not isinstance(modeled_ms_area_location, list):
                 raise InvalidProvidedArea(
                     f"Expected list of AreaLocation objects for set_areas_globally = False, got {type(real_ms_area_location)} and {type(modeled_ms_area_location)}"
@@ -63,8 +72,8 @@ class DataComparator:
                     f"Provided area locations ({len(real_ms_area_location)}) does not match the number of bands ({self.ms_img_data.nbands})"
                 )
 
-            real_ms_square_mean = np.zeros(self.ms_img_data.nbands)
-            modeled_ms_square_mean = np.zeros(self.ms_img_data.nbands)
+            real_ms_square_mean = np.zeros(self.ms_img_data.nbands, dtype=np.float32)
+            modeled_ms_square_mean = np.zeros(self.ms_img_data.nbands, dtype=np.float32)
 
             for band in range(self.ms_img_data.nbands):
                 real_ms_square_mean[band] = ImageData.mean_spectrum_area(self.ms_img_data.img_data[:, :, band],
@@ -76,7 +85,7 @@ class DataComparator:
         sum_modeled_ms_mean = np.sum(modeled_ms_square_mean)
 
         if sum_real_ms_mean < 1e-10 or sum_modeled_ms_mean < 1e-10:
-            raise ValueError
+            raise ValueError("Denominator for next operation is 0 or close to 0")
 
         real_ms_ratios = real_ms_square_mean / sum_real_ms_mean
         modeled_ms_ratios = modeled_ms_square_mean / sum_modeled_ms_mean
