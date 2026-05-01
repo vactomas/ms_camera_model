@@ -9,6 +9,7 @@ from ms_camera_model import (
     FilterSpecs,
     HyperspectralImageData,
     ImageData,
+    MultispectralCameraModel,
     SensorSpecs,
 )
 from ms_camera_model.errors import (
@@ -18,8 +19,10 @@ from ms_camera_model.errors import (
     InvalidProvidedArea,
     NoProvidedArea,
     NoProvidedFilepaths,
+    NoProvidedFilterSensorUnits,
     WavelengthMismatch,
 )
+from ms_camera_model.filter_sensor import InterpolatedFilterSensorUnit
 from ms_camera_model.image_data import ModeledMultispectralImageData
 from ms_camera_model.image_visualiser import ImageVisualiser
 
@@ -143,16 +146,16 @@ class TestModel(unittest.TestCase):
         filter_sensor_unit = FilterSensorUnit(filter_spec, sensor_spec)
 
         with self.assertRaisesRegex(ValueError, "Missing band center"):
-            filter_sensor_unit.interpolate_to_hs_data([])
+            InterpolatedFilterSensorUnit.interpolate_to_hs_data(filter_sensor_unit, [])
 
         with self.assertRaises(WavelengthMismatch):
-            filter_sensor_unit.interpolate_to_hs_data([1000, 1001])
+            InterpolatedFilterSensorUnit.interpolate_to_hs_data(filter_sensor_unit, [1000, 1001])
 
         filter_spec_no_pass = FilterSpecs(np.array([[1, 0], [2, 0]]))
         filter_sensor_unit_no_pass = FilterSensorUnit(filter_spec_no_pass, sensor_spec)
 
         with self.assertRaisesRegex(ValueError, "no passband"):
-            filter_sensor_unit_no_pass.interpolate_to_hs_data([1000, 1001])
+            InterpolatedFilterSensorUnit.interpolate_to_hs_data(filter_sensor_unit_no_pass, [1000, 1001])
 
     def test_filter_sensor_empty_import(self):
         """ Test importing FilterSensorUnit without providing file paths """
@@ -162,6 +165,7 @@ class TestModel(unittest.TestCase):
 
     def test_imshow_incompatible_band_definition(self):
         """ Test plot with incompatible band definition """
+
         img_data = np.ones((2, 2, 2))
 
         mock_hs_img_data = HyperspectralImageData(img_data, [1, 2], 2)
@@ -171,6 +175,30 @@ class TestModel(unittest.TestCase):
 
         with self.assertRaisesRegex(TypeError, "Expected list"):
             ImageVisualiser.imshow(mock_hs_img_data, 2)
+
+    def test_model_creation(self):
+        """ Test creating the MultispectralCameraModel """
+
+        img_data = np.ones((2, 2, 2))
+
+        mock_hs_img_data = HyperspectralImageData(img_data, [1, 2], 2)
+
+        filter_spec = FilterSpecs(np.array([[1, 1], [2, 2]]))
+        sensor_spec = SensorSpecs(np.array([[1, 1], [2, 2]]))
+
+        filter_sensor_unit = FilterSensorUnit(filter_spec, sensor_spec)
+
+        with self.assertRaisesRegex(TypeError, "list of FilterSensorUnit"):
+            MultispectralCameraModel.create_model(mock_hs_img_data, 2, [])
+
+        with self.assertRaisesRegex(TypeError, "Expected HyperspectralImageData"):
+            MultispectralCameraModel.create_model([], [filter_sensor_unit], [])
+
+        with self.assertRaisesRegex(TypeError, "list of band names"):
+            MultispectralCameraModel.create_model(mock_hs_img_data, [filter_sensor_unit], 2)
+
+        with self.assertRaises(NoProvidedFilterSensorUnits):
+            MultispectralCameraModel.create_model(mock_hs_img_data, [], [])
 
 
 if __name__ == "__main__":
