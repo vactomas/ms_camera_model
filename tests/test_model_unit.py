@@ -14,12 +14,14 @@ from ms_camera_model import (
 from ms_camera_model.errors import (
     AreaOutsideOfBounds,
     ImageDataIncompatible,
+    IncompatibleBandChoice,
     InvalidProvidedArea,
     NoProvidedArea,
     NoProvidedFilepaths,
     WavelengthMismatch,
 )
 from ms_camera_model.image_data import ModeledMultispectralImageData
+from ms_camera_model.image_visualiser import ImageVisualiser
 
 
 class TestModel(unittest.TestCase):
@@ -157,6 +159,18 @@ class TestModel(unittest.TestCase):
 
         with self.assertRaises(NoProvidedFilepaths):
             FilterSensorUnit.from_excel([], [])
+
+    def test_imshow_incompatible_band_definition(self):
+        """ Test plot with incompatible band definition """
+        img_data = np.ones((2, 2, 2))
+
+        mock_hs_img_data = HyperspectralImageData(img_data, [1, 2], 2)
+
+        with self.assertRaises(IncompatibleBandChoice):
+            ImageVisualiser.imshow(mock_hs_img_data, [2, 3, 4, 5])
+
+        with self.assertRaisesRegex(TypeError, "Expected list"):
+            ImageVisualiser.imshow(mock_hs_img_data, 2)
 
 
 if __name__ == "__main__":
