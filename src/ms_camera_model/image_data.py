@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Self
 
 import cv2 as cv
 import micasense.metadata as metadata
@@ -17,9 +18,9 @@ import micasense.utils as msutils
 import numpy as np
 import pandas as pd
 import spectral
-from skimage import img_as_float
+from skimage.util import img_as_float
 
-from .errors import (
+from ms_camera_model.errors import (
     AreaOutsideOfBounds,
     ImageDataIncompatible,
     ImageImportFailed,
@@ -49,13 +50,13 @@ class ImageData(ABC):
     nbands: int
 
     @abstractmethod
-    def _create_new_instance(self, new_img_data: np.ndarray):
+    def _create_new_instance(self, new_img_data: np.ndarray) -> Self:
         """ Create new instance of subclass
 
         :param new_img_data: """
         pass
 
-    def __add__(self, other: ImageData) -> ImageData:
+    def __add__(self, other: Self) -> Self:
         """ Addition of two ImageData classes 
         
         :param self:    self
@@ -64,6 +65,9 @@ class ImageData(ABC):
         """
 
         logger.info("[ImageData] Performing ImageData addition...")
+
+        if not isinstance(other, type(self)):
+            raise ImageDataIncompatible(f"Incompatible objects, expected {type(self)}, got {type(other)}")
 
         if not self.nbands == other.nbands or not np.allclose(self.band_centers, other.band_centers, atol=1e-3):
             raise ImageDataIncompatible("ImageData objects used for addition are not compatible with each other")

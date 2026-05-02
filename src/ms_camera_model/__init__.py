@@ -8,7 +8,7 @@ Outputs multispectral data
 
 __version__ = "0.1.0"
 
-from .data_comparison import DataComparator
+from . import data_comparison, image_visualiser
 from .filter_sensor import FilterSensorUnit, FilterSpecs, SensorSpecs
 from .image_data import (
     AreaLocation,
@@ -19,6 +19,6 @@ from .image_data import (
 from .model import MultispectralCameraModel
 
 __all__ = [
-    "DataComparator", "FilterSensorUnit", "FilterSpecs", "SensorSpecs", "HyperspectralImageData", "ImageData",
-    "MultispectralImageData", "AreaLocation", "MultispectralCameraModel"
+    "data_comparison", "image_visualiser", "FilterSensorUnit", "FilterSpecs", "SensorSpecs", "HyperspectralImageData",
+    "ImageData", "MultispectralImageData", "AreaLocation", "MultispectralCameraModel"
 ]
