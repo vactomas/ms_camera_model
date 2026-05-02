@@ -49,3 +49,7 @@ class WavelengthMismatch(Exception):
 
 class NoProvidedFilterSensorUnits(Exception):
     """ No provided FilterSensorUnit class instances """
+
+
+class ImageRegistrationFailed(Exception):
+    """ Image registration is not possible for the provided ImageData class instances """
