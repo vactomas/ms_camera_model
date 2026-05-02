@@ -167,3 +167,21 @@ class DataComparator:
         angle = np.arccos(val)
 
         return angle
+
+    @staticmethod
+    def calculate_ndi(image_data: ModeledMultispectralImageData, reference_area: AreaLocation,
+                      comparison_area: AreaLocation) -> np.ndarray:
+        """ Calculate Normalised Difference Index (NDI) for selected areas
+
+        :param image_data: ModeledMultispectralImageData class instance
+        :param reference_area: Reference area
+        :param comparison_area: area which is compared to the reference
+        :return: 1D array of Normalised Difference Index values per band
+        """
+
+        mean_ref = ImageData.mean_spectrum_area(image_data.img_data, reference_area.as_tuple())
+        mean_comp = ImageData.mean_spectrum_area(image_data.img_data, comparison_area.as_tuple())
+
+        ndi = np.abs(mean_ref - mean_comp) / (mean_ref + mean_comp + 1e-10)
+
+        return ndi
