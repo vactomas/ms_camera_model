@@ -14,73 +14,117 @@ from ms_camera_model.errors import (
     InvalidProvidedArea,
     NoProvidedArea,
 )
-from ms_camera_model.image_data import AreaLocation, ImageData
+from ms_camera_model.image_data import (
+    AreaLocation,
+    ImageData,
+    ModeledMultispectralImageData,
+    MultispectralImageData,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class DataComparator:
 
-    def __init__(self, ms_img_data: ImageData, modeled_img_data: ImageData) -> None:
+    @staticmethod
+    def compare_band_ratios(real_ms_image_data: MultispectralImageData,
+                            modeled_ms_image_data: ModeledMultispectralImageData, real_ms_area_location: AreaLocation,
+                            modeled_ms_area_location: AreaLocation) -> tuple[np.ndarray, np.ndarray]:
+        """ Compare band ratios of real MS image data with modeled MS image data, area defined globally
 
-        self.ms_img_data: ImageData = ms_img_data
-        self.modeled_img_data: ImageData = modeled_img_data
-
-    def compare_band_ratios(self,
-                            real_ms_area_location: AreaLocation | list[AreaLocation],
-                            modeled_ms_area_location: AreaLocation | list[AreaLocation],
-                            set_areas_globally: bool = True) -> tuple[np.ndarray, np.ndarray]:
-        """ Compare band ratios of real MS image data with modeled MS image data
-
-        :param real_ms_area_location: AreaLocation or list[AreaLocation] objects describing the area that will be compared
-        :param modeled_ms_square_mean: AreaLocation or list[AreaLocation] object describing the area that will be compared
-        :param set_areas_globally: if True, provide only single AreaLocation, else list[AreaLocation] of length nbands
+        :param real_ms_image_data: MS image data from a real camera
+        :param modeled_ms_image_data: modeled MS image data
+        :param real_ms_area_location: AreaLocation object describing the area that will be compared
+        :param modeled_ms_square_mean: AreaLocation object describing the area that will be compared
         :return: tuple(real_ms_ratios, modeled_ms_ratios)
         :raises ValueError: if sum of means of selected area is less than 1e-10
+        :raises InvalidProvidedArea: 
         """
 
         logging.info("[DataComparator] Preparing comparison...")
 
+        DataComparator._check_image_data_compatibility(real_ms_image_data, modeled_ms_image_data, real_ms_area_location,
+                                                       modeled_ms_area_location)
+
+        if isinstance(real_ms_area_location, list) or isinstance(modeled_ms_area_location, list):
+            raise InvalidProvidedArea(
+                f"Expected single AreaLocation object, got {type(real_ms_area_location)} and {type(modeled_ms_area_location)}"
+            )
+
+        real_ms_square_mean = ImageData.mean_spectrum_area(real_ms_image_data.img_data,
+                                                           real_ms_area_location.as_tuple())
+        modeled_ms_square_mean = ImageData.mean_spectrum_area(modeled_ms_image_data.img_data,
+                                                              modeled_ms_area_location.as_tuple())
+
+        real_ms_ratios, modeled_ms_ratios = DataComparator._calculate_band_ratios(real_ms_square_mean,
+                                                                                  modeled_ms_square_mean)
+
+        return real_ms_ratios, modeled_ms_ratios
+
+    @staticmethod
+    def compare_band_ratios_per_band(real_ms_image_data: MultispectralImageData,
+                                     modeled_ms_image_data: ModeledMultispectralImageData,
+                                     real_ms_area_location: list[AreaLocation],
+                                     modeled_ms_area_location: list[AreaLocation]) -> tuple[np.ndarray, np.ndarray]:
+        """ Compare band ratios of real MS image data with modeled MS image data, area defined per band
+
+        :param real_ms_image_data: MS image data from a real camera
+        :param modeled_ms_image_data: modeled MS image data
+        :param real_ms_area_location: list[AreaLocation] objects describing the area that will be compared
+        :param modeled_ms_square_mean: list[AreaLocation] object describing the area that will be compared
+        :return: tuple(real_ms_ratios, modeled_ms_ratios)
+        :raises ValueError: if sum of means of selected area is less than 1e-10
+        """
+
+        DataComparator._check_image_data_compatibility(real_ms_image_data, modeled_ms_image_data, real_ms_area_location,
+                                                       modeled_ms_area_location)
+
+        if not isinstance(real_ms_area_location, list) or not isinstance(modeled_ms_area_location, list):
+            raise InvalidProvidedArea(
+                f"Expected list of AreaLocation objects for set_areas_globally = False, got {type(real_ms_area_location)} and {type(modeled_ms_area_location)}"
+            )
+
+        if len(real_ms_area_location) != real_ms_image_data.nbands:
+            raise InvalidProvidedArea(
+                f"Provided area locations ({len(real_ms_area_location)}) does not match the number of bands ({real_ms_image_data.nbands})"
+            )
+
+        real_ms_square_mean = np.zeros(real_ms_image_data.nbands, dtype=np.float32)
+        modeled_ms_square_mean = np.zeros(modeled_ms_image_data.nbands, dtype=np.float32)
+
+        for band in range(real_ms_image_data.nbands):
+            real_ms_square_mean[band] = ImageData.mean_spectrum_area(real_ms_image_data.img_data[:, :, band],
+                                                                     real_ms_area_location[band].as_tuple())[0]
+            modeled_ms_square_mean[band] = ImageData.mean_spectrum_area(modeled_ms_image_data.img_data[:, :, band],
+                                                                        modeled_ms_area_location[band].as_tuple())[0]
+
+        real_ms_ratios, modeled_ms_ratios = DataComparator._calculate_band_ratios(real_ms_square_mean,
+                                                                                  modeled_ms_square_mean)
+
+        return real_ms_ratios, modeled_ms_ratios
+
+    @staticmethod
+    def _check_image_data_compatibility(real_ms_image_data: MultispectralImageData,
+                                        modeled_ms_image_data: ModeledMultispectralImageData,
+                                        real_ms_area_location: AreaLocation | list[AreaLocation],
+                                        modeled_ms_area_location: AreaLocation | list[AreaLocation]) -> None:
+
         if not real_ms_area_location or not modeled_ms_area_location:
             raise NoProvidedArea
 
-        if self.ms_img_data.nbands != self.modeled_img_data.nbands:
+        if real_ms_image_data.nbands != modeled_ms_image_data.nbands:
             raise ImageDataIncompatible(
-                f"Provided image data has incompatible number of bands ({self.ms_img_data.nbands} vs {self.modeled_img_data.nbands})"
+                f"Provided image data has incompatible number of bands ({real_ms_image_data.nbands} vs {modeled_ms_image_data.nbands})"
             )
 
-        if set_areas_globally:
+    @staticmethod
+    def _calculate_band_ratios(real_ms_square_mean: np.ndarray,
+                               modeled_ms_square_mean: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """ Calculate band ratios 
 
-            if isinstance(real_ms_area_location, list) or isinstance(modeled_ms_area_location, list):
-                raise InvalidProvidedArea(
-                    f"Expected single AreaLocation object for set_areas_globally = True, got {type(real_ms_area_location)} and {type(modeled_ms_area_location)}"
-                )
-
-            real_ms_square_mean = ImageData.mean_spectrum_area(self.ms_img_data.img_data,
-                                                               real_ms_area_location.as_tuple())
-            modeled_ms_square_mean = ImageData.mean_spectrum_area(self.modeled_img_data.img_data,
-                                                                  modeled_ms_area_location.as_tuple())
-
-        else:
-            if not isinstance(real_ms_area_location, list) or not isinstance(modeled_ms_area_location, list):
-                raise InvalidProvidedArea(
-                    f"Expected list of AreaLocation objects for set_areas_globally = False, got {type(real_ms_area_location)} and {type(modeled_ms_area_location)}"
-                )
-
-            if len(real_ms_area_location) != self.ms_img_data.nbands:
-                raise InvalidProvidedArea(
-                    f"Provided area locations ({len(real_ms_area_location)}) does not match the number of bands ({self.ms_img_data.nbands})"
-                )
-
-            real_ms_square_mean = np.zeros(self.ms_img_data.nbands, dtype=np.float32)
-            modeled_ms_square_mean = np.zeros(self.ms_img_data.nbands, dtype=np.float32)
-
-            for band in range(self.ms_img_data.nbands):
-                real_ms_square_mean[band] = ImageData.mean_spectrum_area(self.ms_img_data.img_data[:, :, band],
-                                                                         real_ms_area_location[band].as_tuple())[0]
-                modeled_ms_square_mean[band] = ImageData.mean_spectrum_area(
-                    self.modeled_img_data.img_data[:, :, band], modeled_ms_area_location[band].as_tuple())[0]
-
+        :param real_ms_square_mean: 1D array of means for defined area on real camera image data
+        :param modeled_ms_square_mean: 1D array of means for defined area on modeled image data
+        """
         sum_real_ms_mean = np.sum(real_ms_square_mean)
         sum_modeled_ms_mean = np.sum(modeled_ms_square_mean)
 
@@ -99,7 +143,8 @@ class DataComparator:
 
         return real_ms_ratios, modeled_ms_ratios
 
-    def calculate_spectral_angle_mapper(self, real_ms_ratios: np.ndarray, modeled_ms_ratios: np.ndarray) -> float:
+    @staticmethod
+    def calculate_spectral_angle_mapper(real_ms_ratios: np.ndarray, modeled_ms_ratios: np.ndarray) -> float:
         """ Calculate the spectral angle mapper (shape similarity) between real and modeled data
     
         :param real_ms_ratios: real MS band ratios
@@ -122,3 +167,21 @@ class DataComparator:
         angle = np.arccos(val)
 
         return angle
+
+    @staticmethod
+    def calculate_ndi(image_data: ModeledMultispectralImageData, reference_area: AreaLocation,
+                      comparison_area: AreaLocation) -> np.ndarray:
+        """ Calculate Normalised Difference Index (NDI) for selected areas
+
+        :param image_data: ModeledMultispectralImageData class instance
+        :param reference_area: Reference area
+        :param comparison_area: area which is compared to the reference
+        :return: 1D array of Normalised Difference Index values per band
+        """
+
+        mean_ref = ImageData.mean_spectrum_area(image_data.img_data, reference_area.as_tuple())
+        mean_comp = ImageData.mean_spectrum_area(image_data.img_data, comparison_area.as_tuple())
+
+        ndi = np.abs(mean_ref - mean_comp) / (mean_ref + mean_comp + 1e-10)
+
+        return ndi
