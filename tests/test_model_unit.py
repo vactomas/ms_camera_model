@@ -4,12 +4,13 @@ import numpy as np
 
 from ms_camera_model import (
     AreaLocation,
-    DataComparator,
     FilterSensorUnit,
     FilterSpecs,
     ImageData,
     MultispectralCameraModel,
     SensorSpecs,
+    data_comparison,
+    image_visualiser,
 )
 from ms_camera_model.errors import (
     AreaOutsideOfBounds,
@@ -27,7 +28,6 @@ from ms_camera_model.image_data import (
     ModeledMultispectralImageData,
     MultispectralImageData,
 )
-from ms_camera_model.image_visualiser import ImageVisualiser
 
 
 class TestModel(unittest.TestCase):
@@ -56,14 +56,14 @@ class TestModel(unittest.TestCase):
         fake_ms_ratios = np.array([5.0, 5.0, 5.0])
         fake_modeled_ms_ratios = np.array([5.0, 5.0, 5.0])
 
-        angle = DataComparator.calculate_spectral_angle_mapper(fake_ms_ratios, fake_modeled_ms_ratios)
+        angle = data_comparison.calculate_spectral_angle_mapper(fake_ms_ratios, fake_modeled_ms_ratios)
 
         self.assertAlmostEqual(angle, 0.0, places=5, msg=f"Expected angle 0.0, got {angle}")
 
         fake_modeled_ms_ratios_zeros = np.array([0.0, 0.0, 0.0])
 
         with self.assertRaises(ValueError):
-            DataComparator.calculate_spectral_angle_mapper(fake_ms_ratios, fake_modeled_ms_ratios_zeros)
+            data_comparison.calculate_spectral_angle_mapper(fake_ms_ratios, fake_modeled_ms_ratios_zeros)
 
     def test_compare_band_ratios(self):
         """ Test compare_band_ratios function """
@@ -80,33 +80,33 @@ class TestModel(unittest.TestCase):
         area_locations_invalid = [area_loc, area_loc, area_loc]
 
         with self.assertRaises(NoProvidedArea):
-            DataComparator.compare_band_ratios(mock_ms_img_data, mock_modeled_img_data, None, None)
+            data_comparison.compare_band_ratios(mock_ms_img_data, mock_modeled_img_data, None, None)
 
         with self.assertRaises(NoProvidedArea):
-            DataComparator.compare_band_ratios(mock_ms_img_data, mock_modeled_img_data, [], [])
+            data_comparison.compare_band_ratios(mock_ms_img_data, mock_modeled_img_data, [], [])
 
         with self.assertRaises(InvalidProvidedArea):
-            DataComparator.compare_band_ratios(mock_ms_img_data, mock_modeled_img_data, area_loc, area_locations)
+            data_comparison.compare_band_ratios(mock_ms_img_data, mock_modeled_img_data, area_loc, area_locations)
 
         with self.assertRaises(InvalidProvidedArea):
-            DataComparator.compare_band_ratios(mock_ms_img_data, mock_modeled_img_data, area_locations, area_loc)
+            data_comparison.compare_band_ratios(mock_ms_img_data, mock_modeled_img_data, area_locations, area_loc)
 
         with self.assertRaises(ImageDataIncompatible):
-            DataComparator.compare_band_ratios(mock_ms_img_data_more_bands, mock_modeled_img_data, area_loc, area_loc)
+            data_comparison.compare_band_ratios(mock_ms_img_data_more_bands, mock_modeled_img_data, area_loc, area_loc)
 
         with self.assertRaises(InvalidProvidedArea):
-            DataComparator.compare_band_ratios_per_band(mock_ms_img_data, mock_modeled_img_data, area_loc, area_loc)
+            data_comparison.compare_band_ratios_per_band(mock_ms_img_data, mock_modeled_img_data, area_loc, area_loc)
 
         with self.assertRaises(InvalidProvidedArea):
-            DataComparator.compare_band_ratios(mock_ms_img_data, mock_modeled_img_data, area_locations,
-                                               area_locations_invalid)
+            data_comparison.compare_band_ratios(mock_ms_img_data, mock_modeled_img_data, area_locations,
+                                                area_locations_invalid)
 
         with self.assertRaises(InvalidProvidedArea):
-            DataComparator.compare_band_ratios(mock_ms_img_data, mock_modeled_img_data, area_locations_invalid,
-                                               area_locations)
+            data_comparison.compare_band_ratios(mock_ms_img_data, mock_modeled_img_data, area_locations_invalid,
+                                                area_locations)
 
-        real_ratios, modeled_ratios = DataComparator.compare_band_ratios(mock_ms_img_data, mock_modeled_img_data,
-                                                                         area_loc, area_loc)
+        real_ratios, modeled_ratios = data_comparison.compare_band_ratios(mock_ms_img_data, mock_modeled_img_data,
+                                                                          area_loc, area_loc)
         expected_ratios = np.array([0.5, 0.5])
 
         np.testing.assert_almost_equal(real_ratios, expected_ratios)
@@ -172,10 +172,10 @@ class TestModel(unittest.TestCase):
         mock_hs_img_data = HyperspectralImageData(img_data, [1, 2], 2)
 
         with self.assertRaises(IncompatibleBandChoice):
-            ImageVisualiser.imshow(mock_hs_img_data, [2, 3, 4, 5])
+            image_visualiser.imshow(mock_hs_img_data, [2, 3, 4, 5])
 
         with self.assertRaisesRegex(TypeError, "Expected list"):
-            ImageVisualiser.imshow(mock_hs_img_data, 2)
+            image_visualiser.imshow(mock_hs_img_data, 2)
 
     def test_model_creation(self):
         """ Test creating the MultispectralCameraModel """
