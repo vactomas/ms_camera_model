@@ -1,0 +1,79 @@
+name: Publish package to PyPI and docs to GitHub Pages
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  pypi-publish:
+    name: Build and upload to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/ms_camera_model
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+
+    - name: Set up Python
+      run: uv python install 3.12
+
+    - name: Build package
+      run: uv build
+
+    - name: Publish package to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+
+  deploy-docs:
+    name: Build and Deploy Docs
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install system dependencies (GDAL, OpenCV, LaTeX)
+      run: |
+        apt-get update
+        apt-get install -y --no-install-recommends \
+          libgdal-dev g++ libgl1 libglib2.0-0 libsm6 libxext6 libxrender1
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+
+    - name: Set up Python
+      run: uv python install 3.12
+
+    - name: Configure GDAL and Sync Dependencies
+      run: |
+        export GDAL_VERSION=$(gdal-config --version)
+        export CPLUS_INCLUDE_PATH=/usr/include/gdal
+        export C_INCLUDE_PATH=/usr/include/gdal
+        uv add "gdal==${GDAL_VERSION}.*"
+        uv sync --all-extras --dev
+
+    - name: Build HTML
+      run: |
+        uv run sphinx-apidoc -f -o docs/source src/ms_camera_model/
+        uv run sphinx-build -b html docs/source docs/build/html
+
+    - name: Upload artifact for GitHub Pages
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: 'docs/build/html'
+
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
