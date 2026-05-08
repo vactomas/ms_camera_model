@@ -1,10 +1,12 @@
-'''
+"""
 Multispectral Camera Model - Filters and Sensors
 ================================================
 
 * **Description:** Dataclasses and their methods for filters and sensors
 * **Author:** Tomas Vacek
-'''
+* **Year:** 2026
+* **License:** MIT License
+"""
 
 from __future__ import annotations
 
@@ -29,7 +31,11 @@ class FilterSpecs:
     band_width: float = 0
 
     def __post_init__(self) -> None:
-        """ Post init checking to avoid empty filters """
+        """ Post init checking to avoid empty filters 
+
+        :raises ValueError: if filter_transmittance is an empty array
+        :raises ValueError: if the filter_transmittance is not a 2D, 2 column array
+        """
 
         if not np.size(self.filter_transmittance):
             raise ValueError("Filter transmittance is an empty array")
@@ -48,7 +54,11 @@ class SensorSpecs:
     sensor_type: str = "CMOS"
 
     def __post_init__(self) -> None:
-        """ Post init checking to avoid empty qe curve """
+        """ Post init checking to avoid empty qe curve
+
+        :raises ValueError: if sensor_qe_curve is an empty array
+        :raises ValueError: if the sensor_qe_curve is not a 2D, 2 column array
+        """
 
         if not np.size(self.sensor_qe_curve):
             raise ValueError("Sensor QE curve is an empty array")
@@ -60,7 +70,13 @@ class SensorSpecs:
 
 @dataclass
 class FilterSensorUnit:
-    """ Combination of filter and sensor """
+    """ Combination of filter and sensor
+
+    :param filter_spec: filter specification
+    :param sensor_spec: sensor specification
+
+    :method from_excel: alternative constructor which imports data from Excel
+    """
     filter_spec: FilterSpecs
     sensor_spec: SensorSpecs
 
@@ -70,6 +86,8 @@ class FilterSensorUnit:
 
         :param filename_filter: Filename or path to the filter xlsx file
         :param filename_sensor: Filename or path to the sensor xlsx file
+
+        :return: FilterSensorUnit with loaded data
         """
 
         if not filename_filter or not filename_sensor:
@@ -97,15 +115,28 @@ class FilterSensorUnit:
 
 @dataclass
 class InterpolatedFilterSensorUnit(FilterSensorUnit):
-    """ FilterSensorUnit interpolated to hyperspectral data """
+    """ FilterSensorUnit interpolated to hyperspectral data 
+
+    :param combined_response: combined spectral response function for the filter and sensor
+
+    :method interpolate_to_hs_data: alternative constructor, interpolates FilterSensorUnit to hyperspectral data
+    """
     combined_response: np.ndarray | None = None
 
     @classmethod
     def interpolate_to_hs_data(cls, fs_unit: FilterSensorUnit,
                                hs_band_centers: list[float]) -> InterpolatedFilterSensorUnit:
-        """ Interpolate the provided filter and sensor data to hyperspectral data """
+        """ Interpolate the provided filter and sensor data to hyperspectral data 
 
-        logger.info("[FilterSensorUnit] Beginning FilterSensorUnit interpolation...")
+        :param fs_unit: FilterSensorUnit class instance
+        :param hs_band_centers: list[float] containing band centers of available hyperspectral data
+        :return: InterpolatedFilterSensorUnit
+        :raises ValueError: if hs_band_centers are None
+        :raises ValueError: if the filter has no pass band
+        :raises WavelengthMismatch: if the filter active response is outside of available hyperspectral wavelengths
+        """
+
+        logger.info("[InterpolatedFilterSensorUnit] Beginning FilterSensorUnit interpolation...")
 
         if not hs_band_centers:
             raise ValueError("Missing band center data for interpolation")
@@ -138,8 +169,8 @@ class InterpolatedFilterSensorUnit(FilterSensorUnit):
                                   left=0.0,
                                   right=0.0)
 
-        logger.info(f"[FilterSensorUnit] Filter interp {filter_interp.shape}")
-        logger.info(f"[FilterSensorUnit] Sensor interp {sensor_interp.shape}")
+        logger.info(f"[InterpolatedFilterSensorUnit] Filter interp {filter_interp.shape}")
+        logger.info(f"[InterpolatedFilterSensorUnit] Sensor interp {sensor_interp.shape}")
 
         interpolated_filter = FilterSpecs(np.column_stack([hs_band_centers, filter_interp]), fs_unit.filter_spec.name,
                                           fs_unit.filter_spec.supplier, fs_unit.filter_spec.band_center,

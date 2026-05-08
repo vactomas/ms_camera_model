@@ -1,11 +1,13 @@
-'''
+"""
 Multispectral Camera Model - Simulation Model
 =============================================
 
 * **Description:** Simulated model of a multispectral camera. Takes in hyperspectral data and colour filter specs.
-  Outputs multispectral data
+Outputs multispectral data
 * **Author:** Tomas Vacek
-'''
+* **Year:** 2026
+* **License:** MIT License
+"""
 
 from __future__ import annotations
 
@@ -33,6 +35,8 @@ class MultispectralCameraModel:
     :param filter_sensor_units: list of InterpolatedFilterSensorUnit class instances
     :param band_names: list of names for spectral bands
     :param out_data: simulated multispectral image data as ImageData class instance
+
+    :method create_model: alternative constructor ensuring FilterSensorUnit interpolation takes place
     """
     hs_data: HyperspectralImageData
     filter_sensor_units: list[InterpolatedFilterSensorUnit]
@@ -47,6 +51,11 @@ class MultispectralCameraModel:
         :param hs_data: HyperspectralImageData class instance
         :param fs_units: list of FilterSensorUnit class instances
         :param band_names: list of names for spectral bands
+        :return: MultispectralCameraModel
+        :raises TypeError: if fs_units are not a list
+        :raises TypeError: if hs_data is not an instance of HyperspectralImageData
+        :raises TypeError: if band_names are not a list
+        :raises NoProvidedFilterSensorUnits: if no FilterSensorUnits are provided
         """
 
         if not isinstance(fs_units, list):
@@ -101,6 +110,7 @@ class MultispectralCameraModel:
         """ Calculate the image created by a filter sensor unit 
 
         :param filter_sensor_unit: Input FilterSensorUnit
+        :return: np.ndarray of a single band
         """
 
         logger.info("[MSModel] Calculating single band image from hyperspectral data...")
