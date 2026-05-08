@@ -1,12 +1,15 @@
-'''
+"""
 Multispectral Camera Model - Simulation Model
 =============================================
 
-Simulated model of a multispectral camera. Takes in hyperspectral data and colour filter specs.
+* **Description:** Simulated model of a multispectral camera. Takes in hyperspectral data and colour filter specs.
 Outputs multispectral data
-'''
+* **Author:** Tomas Vacek
+* **Year:** 2026
+* **License:** MIT License
+"""
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 
 from . import data_comparison, image_registrator, image_visualiser
 from .filter_sensor import FilterSensorUnit, FilterSpecs, SensorSpecs

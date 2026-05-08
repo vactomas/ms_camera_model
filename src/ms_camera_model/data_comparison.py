@@ -1,10 +1,12 @@
-'''
+"""
 Multispectral Camera Model - Data Comparison
 ============================================
 
 * **Description:** Classes and their methods used for comparing real MS data with modeled data
 * **Author:** Tomas Vacek
-'''
+* **Year:** 2026
+* **License:** MIT License
+"""
 import logging
 
 import numpy as np
@@ -35,13 +37,12 @@ def compare_band_ratios(real_ms_image_data: MultispectralImageData,
     :param modeled_ms_square_mean: AreaLocation object describing the area that will be compared
     :return: tuple(real_ms_ratios, modeled_ms_ratios)
     :raises ValueError: if sum of means of selected area is less than 1e-10
-    :raises InvalidProvidedArea: 
+    :raises InvalidProvidedArea: if provided area locations are lists
     """
 
     logger.info("[DataComparator] Preparing comparison...")
 
-    _check_image_data_compatibility(real_ms_image_data, modeled_ms_image_data, real_ms_area_location,
-                                    modeled_ms_area_location)
+    _check_before_comparison(real_ms_image_data, modeled_ms_image_data, real_ms_area_location, modeled_ms_area_location)
 
     if isinstance(real_ms_area_location, list) or isinstance(modeled_ms_area_location, list):
         raise InvalidProvidedArea(
@@ -66,13 +67,14 @@ def compare_band_ratios_per_band(real_ms_image_data: MultispectralImageData,
     :param real_ms_image_data: MS image data from a real camera
     :param modeled_ms_image_data: modeled MS image data
     :param real_ms_area_location: list[AreaLocation] objects describing the area that will be compared
-    :param modeled_ms_square_mean: list[AreaLocation] object describing the area that will be compared
+    :param modeled_ms_area_location: list[AreaLocation] object describing the area that will be compared
     :return: tuple(real_ms_ratios, modeled_ms_ratios)
     :raises ValueError: if sum of means of selected area is less than 1e-10
+    :raises InvalidProvidedArea: if provided area locations are not lists
+    :raises InvalidProvidedArea: if provided area locations are not of necessary length
     """
 
-    _check_image_data_compatibility(real_ms_image_data, modeled_ms_image_data, real_ms_area_location,
-                                    modeled_ms_area_location)
+    _check_before_comparison(real_ms_image_data, modeled_ms_image_data, real_ms_area_location, modeled_ms_area_location)
 
     if not isinstance(real_ms_area_location, list) or not isinstance(modeled_ms_area_location, list):
         raise InvalidProvidedArea(
@@ -98,10 +100,17 @@ def compare_band_ratios_per_band(real_ms_image_data: MultispectralImageData,
     return real_ms_ratios, modeled_ms_ratios
 
 
-def _check_image_data_compatibility(real_ms_image_data: MultispectralImageData,
-                                    modeled_ms_image_data: ModeledMultispectralImageData,
-                                    real_ms_area_location: AreaLocation | list[AreaLocation],
-                                    modeled_ms_area_location: AreaLocation | list[AreaLocation]) -> None:
+def _check_before_comparison(real_ms_image_data: MultispectralImageData,
+                             modeled_ms_image_data: ModeledMultispectralImageData,
+                             real_ms_area_location: AreaLocation | list[AreaLocation],
+                             modeled_ms_area_location: AreaLocation | list[AreaLocation]) -> None:
+    """ Check if ImageData child class instances are compatible with each other and areas are provided 
+
+    :param real_ms_image_data: MultispectralImageData instance
+    :param modeled_ms_image_data: ModeledMultispectralImageData instance
+    :param real_ms_area_location: AreaLocation or list of AreaLocation instances
+    :param modeled_ms_area_location: AreaLocation or list of AreaLocation instances
+    """
 
     if not real_ms_area_location or not modeled_ms_area_location:
         raise NoProvidedArea
@@ -118,6 +127,8 @@ def _calculate_band_ratios(real_ms_square_mean: np.ndarray,
 
     :param real_ms_square_mean: 1D array of means for defined area on real camera image data
     :param modeled_ms_square_mean: 1D array of means for defined area on modeled image data
+    :return: tuple of real_ms_ratios and modeled_ms_ratios
+    :raises ValueError: if the denominator for division is less than 1e-10
     """
     sum_real_ms_mean = np.sum(real_ms_square_mean)
     sum_modeled_ms_mean = np.sum(modeled_ms_square_mean)

@@ -1,9 +1,12 @@
-'''
-Multispectral Camera Model - Image Registrator
-=============================================
+"""
+Multispectral Camera Model - Image Registration
+===============================================
 
-Dataclasses and their methods for registering image data
-'''
+* **Description:** Classes and functions for image registration
+* **Author:** Tomas Vacek
+* **Year:** 2026
+* **License:** MIT License
+"""
 
 from __future__ import annotations
 
@@ -149,7 +152,11 @@ def register_bands(reference_img: ImageData,
     :param registration_strategy: image registration strategy
     :param band_mask_paths_ref: list of mask file paths for reference images
     :param band_mask_paths_src: list of mask file paths for source images
-    :raises ImageDataIncompatible: if the number of bands differs in self and other
+    :return: ImageData instance class (same as of reference_img)
+    :raises ImageDataIncompatible: if the number of bands differs in reference_img and source_img
+    :raises NoImageData: if reference_img or source_img contains no image data
+    :raises NoImageData: if reference_img or source_img is not provided
+    :raises ImageRegistrationFailed: if band registration fails
     """
 
     logger.info("[ImageRegistrator] Starting image registration...")

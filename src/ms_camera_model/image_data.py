@@ -1,9 +1,12 @@
-'''
+"""
 Multispectral Camera Model - Image Data
 =======================================
 
-Dataclasses and their methods for image data
-'''
+* **Description:** Dataclasses and their methods for image data
+* **Author:** Tomas Vacek
+* **Year:** 2026
+* **License:** MIT License
+"""
 
 from __future__ import annotations
 
@@ -53,15 +56,18 @@ class ImageData(ABC):
     def _create_new_instance(self, new_img_data: np.ndarray) -> Self:
         """ Create new instance of subclass
 
-        :param new_img_data: """
+        :param new_img_data: np.ndarray containing new image data array
+        :return: Self
+        """
         pass
 
     def __add__(self, other: Self) -> Self:
         """ Addition of two ImageData classes 
         
-        :param self:    self
-        :param other:   other ImageData class
+        :param other: other ImageData class
+        :return: Self
         :raises ImageDataIncompatible: when the provided class instances do not have matching band_centers and number of bands
+        :raises ImageDataIncompatible: when provided class instances are not of the same class
         """
 
         logger.info("[ImageData] Performing ImageData addition...")
@@ -80,6 +86,8 @@ class ImageData(ABC):
 
         :param img: image data
         :param corner_coords: coordinates of corners of the area in format [ulx, uly, lrx, lry]
+        :return: np.ndarray of mean spectrum for selected area
+        :raises AreaOutsideOfBounds: when provided area coordinates are outside of the available image data
         """
 
         img_3d = np.atleast_3d(img)
@@ -111,9 +119,14 @@ class AreaLocation:
     lry: int
 
     def __post_init__(self) -> None:
-        """ Post init for checking coordinates """
+        """ Post init for checking coordinates 
+        
+        :raises ValueError: if coordinates are negative
+        :raises ValueError: if lower-right X is greater than or equal to upper-left X
+        :raises ValueError: if lower-right Y is greater than or equal to upper-left Y
+        """
 
-        if self.ulx < 0 or self.lry < 0:
+        if self.ulx < 0 or self.uly < 0:
             raise ValueError("Area coordinates cannot be negative.")
         if self.ulx >= self.lrx:
             raise ValueError(f"Upper-left X ({self.ulx}) must be <= Lower-right X ({self.lrx})")
@@ -143,7 +156,8 @@ class ModeledMultispectralImageData(ImageData):
         """ Perform radiometric calibration on the modeled multispectral image data
 
         :param panel_calibration: panel_calibration data of used MicaSense CRP
-        :param panel_location: list of AreaLocation objects
+        :param panel_locations: list of AreaLocation objects
+        :return: ModeledMultispectralImageData
         """
 
         calibrated_img_data = np.zeros_like(self.img_data, dtype=np.float32)
@@ -180,9 +194,12 @@ class MultispectralImageData(ImageData):
 
         :param filepaths: list of filepaths to the multispectral images, their order determines order in the final array
         :param panel_calibration: panel_calibration data of used MicaSense CRP
-        :param panel_location: list of AreaLocation objects
+        :param panel_locations: list of AreaLocation objects
+        :return: MultispectralImageData
+        :raises ImageDataIncompatible: when the number of image filepaths doesn't match number of calibration panel coordinates
+        :raises ImageImportFailed: when image import fails
+        :raises NoImageData: when image import results in an empty array
         :raises NoProvidedArea: when the provided area of the CRP is None or empty
-        :raises Exception: when the length of filepaths and panel_locations doesn't match
         :raises TypeError: when provided paths aren't in list
         :raises TypeError: when provided paths aren't strings
         :raises NoProvidedFilepaths: when there are no provided filepaths
@@ -245,6 +262,9 @@ class MultispectralImageData(ImageData):
         """ Import multispectral images as a np.ndarray 
 
         :param filepaths: list of filepaths to the multispectral images, their order determines order in the final array
+        :return: MultispectralImageData
+        :raises ImageImportFailed: when image import fails
+        :raises NoImageData: when image import results in an empty array
         :raises TypeError: when provided paths aren't in list
         :raises TypeError: when provided paths aren't strings
         :raises NoProvidedFilepaths: when there are no provided filepaths
@@ -304,6 +324,7 @@ class MultispectralImageData(ImageData):
 class HyperspectralImageData(ImageData):
     """ Hyperspectral Image Data - imported from hyperspectral data file 
 
+    :method import_calibrated_hs_img: Import hyperspectral cube with metadata and perform radiometric calibration
     :method import_hs_img: Import hyperspectral cube into img_data, band_centers and nbands
     """
 
@@ -318,6 +339,8 @@ class HyperspectralImageData(ImageData):
         :param img_filepath: path to the hyperspectral image file
         :param panel_data_filepath: path to the csv panel albedo file
         :param panel_location: AreaLocation object
+        :return: HyperspectralImageData
+        :raises NoProvidedFilepaths: when no hyperspectral image filepath is provided
         :raises NoImageData: when spectral fails to load the image
         """
 
@@ -351,9 +374,9 @@ class HyperspectralImageData(ImageData):
         """ Import hyperspectral cube as ImageData class instance 
 
         :param img_filepath: path to the hyperspectral image file
-        :param panel_data_filepath: path to the csv panel albedo file
-        :param panel_location: panel_location information format [ulx, uly, lrx, lry]
         :raises NoImageData: when spectral fails to load the image
+        :raises NoProvidedFilepaths: when no hyperspectral image filepath is provided
+        :return: HyperspectralImageData
         """
 
         if not img_filepath:
@@ -390,6 +413,8 @@ class HyperspectralImageData(ImageData):
         :param panel_location: panel_location information format [ulx, uly, lrx, lry]
         :param snr_multiplier: multiplier for snr check
         :return: calibrated numpy img_data array
+        :raises NoDarkFrame: if the metadata doesn't contain 'autodarkstartline'
+        :raises NoProvidedFilepaths: if no calibration panel filepath is provided
         """
 
         if not filepath:

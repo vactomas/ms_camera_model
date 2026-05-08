@@ -1,14 +1,16 @@
-'''
+"""
 Multispectral Camera Model - Custom Errors
 ==========================================
 
 * **Description:** Custom error definitions to improve readability and make debugging easier
 * **Author:** Tomas Vacek
-'''
+* **Year:** 2026
+* **License:** MIT License
+"""
 
 
 class ImageDataIncompatible(Exception):
-    """ Image Data isn't incompatible """
+    """ Image Data is incompatible """
 
 
 class IncompatibleBandChoice(Exception):
@@ -25,6 +27,10 @@ class NoImageData(Exception):
 
 class NoProvidedArea(Exception):
     """ No area was provided """
+
+
+class NoBandCenters(Exception):
+    """ Provided ImageData class instance doesn't contain band_centers """
 
 
 class InvalidProvidedArea(Exception):
