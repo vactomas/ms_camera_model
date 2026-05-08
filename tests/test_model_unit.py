@@ -17,6 +17,7 @@ from ms_camera_model.errors import (
     ImageDataIncompatible,
     IncompatibleBandChoice,
     InvalidProvidedArea,
+    NoImageData,
     NoProvidedArea,
     NoProvidedFilepaths,
     NoProvidedFilterSensorUnits,
@@ -28,6 +29,7 @@ from ms_camera_model.image_data import (
     ModeledMultispectralImageData,
     MultispectralImageData,
 )
+from ms_camera_model.image_registrator import AkazeAlgorithm, register_bands
 
 
 class TestModel(unittest.TestCase):
@@ -200,6 +202,26 @@ class TestModel(unittest.TestCase):
 
         with self.assertRaises(NoProvidedFilterSensorUnits):
             MultispectralCameraModel.create_model(mock_hs_img_data, [], [])
+
+    def test_img_registrator(self):
+        """ Test ImageRegistrator class """
+        img_data = np.ones((2, 2, 2))
+
+        mock_hs_img_data = HyperspectralImageData(img_data, [1, 2], 2)
+        mock_hs_img_data_bad_nbands = HyperspectralImageData(img_data, [1, 2], 18)
+        mock_hs_img_data_bad_img_data = HyperspectralImageData(np.array([]), [1, 2], 2)
+
+        with self.assertRaisesRegex(NoImageData, "No reference_img or source_img"):
+            register_bands([], [], AkazeAlgorithm())
+
+        with self.assertRaises(ImageDataIncompatible):
+            register_bands(mock_hs_img_data, mock_hs_img_data_bad_nbands, AkazeAlgorithm())
+
+        with self.assertRaisesRegex(NoImageData, "source_img.img_data"):
+            register_bands(mock_hs_img_data, mock_hs_img_data_bad_img_data, AkazeAlgorithm())
+
+        with self.assertRaisesRegex(NoImageData, "reference_img.img_data"):
+            register_bands(mock_hs_img_data_bad_img_data, mock_hs_img_data, AkazeAlgorithm())
 
 
 if __name__ == "__main__":
