@@ -174,22 +174,62 @@ def calculate_spectral_angle_mapper(real_ms_ratios: np.ndarray, modeled_ms_ratio
     return angle
 
 
-def calculate_ndi(image_data: ModeledMultispectralImageData, reference_area: AreaLocation,
-                  comparison_area: AreaLocation) -> np.ndarray:
+def calculate_michelson_contrast(image_data: ModeledMultispectralImageData, band: int) -> float:
+    """ Calculate Michelson contrast for a single band
+
+    :param image_data: ModeledMultispectralImageData class instance
+    :param band: band number as an integer
+    :return: Michelson contrast as a float
+    """
+    logger.info("[DataComparator] Calculating Michelson contrast...")
+
+    img_data = image_data.img_data
+
+    max_val = img_data[:, :, band].max()
+    min_val = img_data[:, :, band].min()
+
+    michelson_contrast = (max_val - min_val) / (max_val + min_val + 1e-10)
+
+    return michelson_contrast
+
+
+def calculate_weber_contrast(image_data: ModeledMultispectralImageData, band: int, area_of_interest: AreaLocation,
+                             background_area: AreaLocation) -> float:
+    """ Calculate Weber contrast for a single band and defined area
+
+    :param image_data: ModeledMultispectralImageData class instance
+    :param band: band number as an integer
+    :param area_of_interest: AreaLocation instance with coordinates of the area of interest
+    :param background_area: AreaLocation instance with coordinates of the background area
+    :return: Weber contrast as a float
+    """
+    logger.info("[DataComparator] Calculating Weber contrast...")
+
+    img_data = image_data.img_data
+
+    mean_target = ImageData.mean_spectrum_area(img_data[:, :, band], area_of_interest.as_tuple())
+    mean_background = ImageData.mean_spectrum_area(img_data[:, :, band], background_area.as_tuple())
+
+    weber_contrast = (mean_target - mean_background) / (mean_background + 1e-10)
+
+    return weber_contrast
+
+
+def calculate_ndi(image_data: ModeledMultispectralImageData, band_1: int, band_2: int) -> np.ndarray:
     """ Calculate Normalised Difference Index (NDI) for selected areas
 
     :param image_data: ModeledMultispectralImageData class instance
-    :param reference_area: Reference area
-    :param comparison_area: area which is compared to the reference
+    :param band_1: band number as an integer
+    :param band_2: band number as an integer
     :return: 1D array of Normalised Difference Index values per band
     """
     logger.info("[DataComparator] Calculating Normalised Difference Index (NDI)...")
 
-    mean_ref = ImageData.mean_spectrum_area(image_data.img_data, reference_area.as_tuple())
-    mean_comp = ImageData.mean_spectrum_area(image_data.img_data, comparison_area.as_tuple())
+    img_data = image_data.img_data
 
-    ndi = np.abs(mean_ref - mean_comp) / (mean_ref + mean_comp + 1e-10)
+    nominator = img_data[:, :, band_1] - img_data[:, :, band_2]
+    denominator = img_data[:, :, band_1] + img_data[:, :, band_2] + 1e-10
 
-    logger.info(f"[DataComparator] NDI: {ndi}")
+    ndi = np.divide(nominator, denominator)
 
     return ndi
