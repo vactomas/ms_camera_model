@@ -32,7 +32,7 @@ def imshow(image_data: ImageData, bands: list[int] | None = None) -> None:
     :raises IncompatibleBandChoice: if 'bands' is not [], len(bands) != 3 or the number is out-of-bounds
     """
 
-    if not bands:
+    if bands is None:
         bands = []
 
     if not isinstance(bands, list):
@@ -86,10 +86,10 @@ def plot_area_spectrum(image_data: ImageData, coordinates: AreaLocation) -> None
 
     logger.info(f"[ImageVisualiser] Plotting mean spectrum of area x {ulx}:{lrx}, y {lry}:{uly}")
 
-    if image_data.band_centers is None:
+    if not image_data.band_centers:
         raise NoBandCenters("[ImageVisualiser] Cannot plot spectrum - band_centers are missing.")
 
-    area_data = image_data.mean_spectrum_area(image_data.img_data, coordinates.as_tuple())
+    area_data = ImageData.mean_spectrum_area(image_data.img_data, coordinates.as_tuple())
     plt.plot(image_data.band_centers, area_data, label="Spectral response")
-    plt.xlabel("Band")
-    plt.ylabel("Reflectance")
+    plt.xlabel("Wavelength [nm]")
+    plt.ylabel("Spectral reflectance [-]")
