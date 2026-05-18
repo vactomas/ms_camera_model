@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build >= 0.10.0"]
+requires = ["uv_build >= 0.10.0, < 0.12.0"]
 build-backend = "uv_build"
 
 [project]
@@ -23,7 +23,7 @@ requires-python = ">=3.11"
 readme = "README.md"
 license = {text = "MIT"}
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
