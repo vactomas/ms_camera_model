@@ -62,7 +62,7 @@ class ImageData(ABC):
         pass
 
     def __add__(self, other: Self) -> Self:
-        """ Addition of two ImageData classes 
+        """ Addition of two ImageData classes and return the result
         
         :param other: other ImageData class
         :return: Self
@@ -310,14 +310,14 @@ class MultispectralImageData(ImageData):
         :raises NoProvidedFilepaths: when there are no provided filepaths
         """
 
+        if not filepaths:
+            raise NoProvidedFilepaths
+
         if not isinstance(filepaths, list):
             raise TypeError("Error. This function requires a list of paths.")
 
         if not all(isinstance(item, str) for item in filepaths):
             raise TypeError("Error. Some provided paths aren't strings.")
-
-        if not filepaths:
-            raise NoProvidedFilepaths
 
 
 @dataclass
@@ -359,7 +359,7 @@ class HyperspectralImageData(ImageData):
         img_data = img.load().astype(np.float32)
         metadata = img.metadata
 
-        img_data_calibrated, valid_band_centers = HyperspectralImageData.perform_radiometric_calibration(
+        img_data_calibrated, valid_band_centers = HyperspectralImageData._perform_radiometric_calibration(
             panel_data_filepath, metadata, img_data, panel_location)
 
         nbands = img_data_calibrated.shape[2]
@@ -400,11 +400,11 @@ class HyperspectralImageData(ImageData):
         return cls(img_data, band_centers, nbands)
 
     @staticmethod
-    def perform_radiometric_calibration(filepath: str,
-                                        metadata: dict[str, str],
-                                        img_data: np.ndarray,
-                                        panel_location: AreaLocation,
-                                        snr_multiplier: float = 5.0) -> tuple[np.ndarray, np.ndarray]:
+    def _perform_radiometric_calibration(filepath: str,
+                                         metadata: dict[str, str],
+                                         img_data: np.ndarray,
+                                         panel_location: AreaLocation,
+                                         snr_multiplier: float = 5.0) -> tuple[np.ndarray, np.ndarray]:
         """ Perform radiometric calibration based on calibration plate with known albedo
 
         :param filepath: path to the wavelength-albedo csv file

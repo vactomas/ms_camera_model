@@ -51,7 +51,7 @@ class SensorSpecs:
     sensor_qe_curve: np.ndarray
     name: str = "Generic"
     supplier: str = "Generic"
-    sensor_type: str = "CMOS"
+    sensor_type: str = "Generic"
 
     def __post_init__(self) -> None:
         """ Post init checking to avoid empty qe curve

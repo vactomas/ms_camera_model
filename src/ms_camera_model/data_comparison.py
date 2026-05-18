@@ -34,7 +34,7 @@ def compare_band_ratios(real_ms_image_data: MultispectralImageData,
     :param real_ms_image_data: MS image data from a real camera
     :param modeled_ms_image_data: modeled MS image data
     :param real_ms_area_location: AreaLocation object describing the area that will be compared
-    :param modeled_ms_square_mean: AreaLocation object describing the area that will be compared
+    :param modeled_ms_area_location: AreaLocation object describing the area that will be compared
     :return: tuple(real_ms_ratios, modeled_ms_ratios)
     :raises ValueError: if sum of means of selected area is less than 1e-10
     :raises InvalidProvidedArea: if provided area locations are lists
@@ -174,7 +174,8 @@ def calculate_spectral_angle_mapper(real_ms_ratios: np.ndarray, modeled_ms_ratio
     return angle
 
 
-def calculate_michelson_contrast(image_data: ModeledMultispectralImageData, band: int) -> float:
+def calculate_michelson_contrast(image_data: ModeledMultispectralImageData | MultispectralImageData,
+                                 band: int) -> float:
     """ Calculate Michelson contrast for a single band
 
     :param image_data: ModeledMultispectralImageData class instance
@@ -212,7 +213,7 @@ def calculate_weber_contrast(image_data: ModeledMultispectralImageData, band: in
 
     weber_contrast = (mean_target - mean_background) / (mean_background + 1e-10)
 
-    return weber_contrast
+    return float(weber_contrast.item())
 
 
 def calculate_ndi(image_data: ModeledMultispectralImageData, band_1: int, band_2: int) -> np.ndarray:
@@ -221,15 +222,15 @@ def calculate_ndi(image_data: ModeledMultispectralImageData, band_1: int, band_2
     :param image_data: ModeledMultispectralImageData class instance
     :param band_1: band number as an integer
     :param band_2: band number as an integer
-    :return: 1D array of Normalised Difference Index values per band
+    :return: ndi representation of the scene as ndarray
     """
     logger.info("[DataComparator] Calculating Normalised Difference Index (NDI)...")
 
     img_data = image_data.img_data
 
-    nominator = img_data[:, :, band_1] - img_data[:, :, band_2]
+    numerator = img_data[:, :, band_1] - img_data[:, :, band_2]
     denominator = img_data[:, :, band_1] + img_data[:, :, band_2] + 1e-10
 
-    ndi = np.divide(nominator, denominator)
+    ndi = np.divide(numerator, denominator)
 
     return ndi

@@ -177,7 +177,7 @@ def register_bands(reference_img: ImageData,
 
     registered_img_data = np.zeros(
         (reference_img.img_data.shape[0], reference_img.img_data.shape[1], reference_img.img_data.shape[2]),
-        dtype=np.float64)
+        dtype=np.float32)
 
     for i_band in range(reference_img.nbands):
         logger.info(f"[ImageRegistrator] Registering band {i_band} out of {reference_img.nbands}...")
@@ -195,8 +195,20 @@ def register_bands(reference_img: ImageData,
 
 def _register_band(reference_img: ImageData, source_img: ImageData, i_band: int,
                    registration_strategy: RegistrationAlgorithm, band_mask_paths_ref: list[str | None] | None,
-                   band_mask_paths_src: list[str | None] | None) -> np.ndarray | None:
-    """ Register single band """
+                   band_mask_paths_src: list[str | None] | None) -> np.ndarray:
+    """ Register single band 
+
+    :param reference_img: image data for the reference
+    :param source_img: image data for the source
+    :param i_band: registered band index
+    :param registration_strategy: RegistrationAlgorithm child class instance
+    :param band_mask_paths_ref: masks for reference image data
+    :param band_mask_paths_src: masks for source image data
+    :return: warped image array
+    :raises ImageRegistrationFailed: when there are too few good matches
+    :raises ImageRegistrationFailed: when there is no homography matrix
+    :raises ImageRegistrationFailed: when the warping function itself fails
+    """
 
     transformed_img = np.zeros((reference_img.img_data.shape[0], reference_img.img_data.shape[1]))
 
@@ -226,8 +238,8 @@ def _register_band(reference_img: ImageData, source_img: ImageData, i_band: int,
     img_ref_exp_comp = exposure.equalize_hist(img_ref)
     img_src_exp_comp = exposure.equalize_hist(img_src)
 
-    img_ref_calc = np.zeros_like(img_ref_exp_comp)
-    img_src_calc = np.zeros_like(img_src_exp_comp)
+    img_ref_calc = np.zeros_like(img_ref_exp_comp, dtype=np.uint8)
+    img_src_calc = np.zeros_like(img_src_exp_comp, dtype=np.uint8)
 
     cv.normalize(img_ref_exp_comp, img_ref_calc, 255, 0, cv.NORM_MINMAX, cv.CV_8U)
     cv.normalize(img_src_exp_comp, img_src_calc, 255, 0, cv.NORM_MINMAX, cv.CV_8U)
@@ -255,7 +267,7 @@ def _register_band(reference_img: ImageData, source_img: ImageData, i_band: int,
     homography, inliers = cv.findHomography(p2, p1, cv.RANSAC)
 
     if homography is None:
-        raise ImageRegistrationFailed
+        raise ImageRegistrationFailed("No homography transformation matrix was calculated")
 
     try:
         transformed_img[:, :] = cv.warpPerspective(img_src, homography, (img_ref.shape[1], img_ref.shape[0]))

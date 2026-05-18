@@ -37,6 +37,7 @@ class MultispectralCameraModel:
     :param out_data: simulated multispectral image data as ImageData class instance
 
     :method create_model: alternative constructor ensuring FilterSensorUnit interpolation takes place
+    :method run_simulation: run simulation of the multispectral camera
     """
     hs_data: HyperspectralImageData
     filter_sensor_units: list[InterpolatedFilterSensorUnit]
@@ -102,7 +103,7 @@ class MultispectralCameraModel:
             modeled_ms_data[:, :, i_unit] = self._calculate_band(unit)
             modeled_ms_data_band_centers.append(unit.filter_spec.band_center)
 
-        logger.info(f"[MSModel] modeled_ms_data max val: {modeled_ms_data.max()}")
+        modeled_ms_data = np.clip(modeled_ms_data, a_min=0.0, a_max=None)
         self.out_data = ModeledMultispectralImageData(modeled_ms_data, modeled_ms_data_band_centers,
                                                       len(self.filter_sensor_units), self.band_names)
 
@@ -116,8 +117,6 @@ class MultispectralCameraModel:
         logger.info("[MSModel] Calculating single band image from hyperspectral data...")
 
         data_through_unit = self.hs_data.img_data * filter_sensor_unit.combined_response
-        logger.info(f"[MSModel] Max data val: {data_through_unit.max()}")
-        logger.info(f"[MSModel] Data type: {data_through_unit.dtype}")
 
         logger.info("[MSModel] Performing trapezoidal integration...")
 
