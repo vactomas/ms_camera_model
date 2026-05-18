@@ -1,21 +1,27 @@
 stages:
+  - linting
   - tests
-  - deploy-docs
 
 cache:
   key:
     files:
       - pyproject.toml
+      - .pre-commit-config.yaml
   paths:
     - .cache/uv
+    - .cache/pre-commit
 
 variables:
   UV_CACHE_DIR: ".cache/uv"
+  PRE_COMMIT_HOME: ".cache/pre-commit"
 
 .env_setup: &env_setup
   before_script:
     # Install system dependencies
-    - apt-get update && apt-get install -y --no-install-recommends libgdal-dev g++ libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 rsync openssh-client
+    - apt-get update && apt-get install -y --no-install-recommends libgdal-dev g++ libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 rsync openssh-client git
+
+    # Configure git
+    - git config --global --add safe.directory "*"
     
     # Configure GDAL environment
     - export GDAL_VERSION=$(gdal-config --version)
@@ -25,6 +31,17 @@ variables:
     # Sync dependencies
     - uv add "gdal==${GDAL_VERSION}.*"
     - uv sync --all-extras --dev
+
+pre-commit:
+  stage: linting
+  tags:
+    - docker
+  image:
+    name: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+    pull_policy: [if-not-present, always]
+  <<: *env_setup
+  script:
+    - uv run pre-commit run --all-files --color always --show-diff-on-failure
 
 test-module:
   stage: tests
@@ -36,29 +53,3 @@ test-module:
   <<: *env_setup
   script:
     - uv run -m unittest discover -v -s . -p "test_*.py"
-
-deploy-docs:
-  stage: deploy-docs
-  image:
-    name: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
-    pull_policy: [if-not-present, always]
-  tags:
-    - docker
-  variables:
-    SSH_USER: "runner"
-    DEST_PATH: "/opt/stacks/caddy/site/docs/"
-  rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-  <<: *env_setup
-  script:
-    # Build Docs
-    - uv run sphinx-apidoc -f -o docs/source src/ms_camera_model/
-    - uv run sphinx-build -b html docs/source docs/build/html
-    
-    # Set up SSH and Deploy
-    - eval $(ssh-agent -s)
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-    - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
-    - ssh-keyscan -p "$SSH_PORT" "$VPSHOST" >> ~/.ssh/known_hosts
-    - rsync -avz --delete -e "ssh -p $SSH_PORT" docs/build/html/ "$SSH_USER@$VPSHOST:$DEST_PATH"

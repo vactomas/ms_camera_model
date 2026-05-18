@@ -7,3 +7,9 @@ repos:
       - id: yapf
         name: yapf
         args: ['--style', '{based_on_style: google, column_limit: 120}']
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.6
+    hooks:
+      - id: ruff
+        args: [ --fix, --select=I ]
