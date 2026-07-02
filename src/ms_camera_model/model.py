@@ -120,8 +120,8 @@ class MultispectralCameraModel:
 
         logger.info("[MSModel] Performing trapezoidal integration...")
 
-        signal_integral = np.trapezoid(data_through_unit, axis=2)
-        filter_integral = np.trapezoid(filter_sensor_unit.combined_response)
+        signal_integral = np.trapezoid(data_through_unit, self.hs_data.band_centers, axis=2)
+        filter_integral = np.trapezoid(filter_sensor_unit.combined_response, self.hs_data.band_centers)
 
         out_img = signal_integral / filter_integral
 

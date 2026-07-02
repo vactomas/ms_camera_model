@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.1.0 (2026-07-02)
+------------------
+* Switch to variable step integration
+
 1.0.0 (2026-05-18)
 ------------------
 * Initial Release
