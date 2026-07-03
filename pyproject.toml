@@ -18,6 +18,7 @@ dependencies = [
    "spectral>=0.24",
    "micasense-imageprocessing>=0.1.2",
    "openpyxl>=3.1.5",
+   "pydantic>=2.13.4",
 ]
 requires-python = ">=3.11"
 readme = "README.md"

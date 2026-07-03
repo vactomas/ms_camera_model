@@ -23,6 +23,9 @@ from ms_camera_model.image_data import (
     ImageData,
     ModeledMultispectralImageData,
 )
+from ms_camera_model.operations.interpolation import interpolate_light_data
+from ms_camera_model.schemas.enums import SimulationMode
+from ms_camera_model.schemas.light import LightSourceSpec
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +37,8 @@ class MultispectralCameraModel:
     :param hs_data: HyperspectralImageData class instance
     :param filter_sensor_units: list of InterpolatedFilterSensorUnit class instances
     :param band_names: list of names for spectral bands
+    :param lightsource_spec: LightsourceSpec class instance
+    :param simulation_mode: SimulationMode selection, defaults to reflectance
     :param out_data: simulated multispectral image data as ImageData class instance
 
     :method create_model: alternative constructor ensuring FilterSensorUnit interpolation takes place
@@ -42,20 +47,36 @@ class MultispectralCameraModel:
     hs_data: HyperspectralImageData
     filter_sensor_units: list[InterpolatedFilterSensorUnit]
     band_names: list[str]
+    lightsource_spec: LightSourceSpec | None = None
+    simulation_mode: SimulationMode = SimulationMode.REFLECTANCE
+
     out_data: ModeledMultispectralImageData = field(init=False)
 
+    def __post_init__(self) -> None:
+        """ Post init type check of InterpolatedFilterSensorUnit """
+        if not all(isinstance(item, InterpolatedFilterSensorUnit) for item in self.filter_sensor_units):
+            raise TypeError("Provided filter_sensor_units are not all of type InterpolatedFilterSensorUnit")
+
     @classmethod
-    def create_model(cls, hs_data: HyperspectralImageData, fs_units: list[FilterSensorUnit],
-                     band_names: list[str]) -> MultispectralCameraModel:
+    def create_model(cls,
+                     hs_data: HyperspectralImageData,
+                     fs_units: list[FilterSensorUnit],
+                     band_names: list[str],
+                     lightsource_spec: LightSourceSpec | None = None,
+                     simulation_mode: SimulationMode = SimulationMode.REFLECTANCE) -> MultispectralCameraModel:
         """ Interpolate FilterSensorUnits to hyperspectral image data and create model with corrected units
 
         :param hs_data: HyperspectralImageData class instance
         :param fs_units: list of FilterSensorUnit class instances
         :param band_names: list of names for spectral bands
+        :param lightsource_spec: LightsourceSpec class instance
+        :param simulation_mode: defines simulation mode ('reflectance' or 'radiance')
         :return: MultispectralCameraModel
         :raises TypeError: if fs_units are not a list
         :raises TypeError: if hs_data is not an instance of HyperspectralImageData
         :raises TypeError: if band_names are not a list
+        :raises TypeError: if lightsource_spec is not an instance of LightsourceSpec
+        :raises ValueError: if selected simulation_mode is RADIANCE and lightsource_spec is empty
         :raises NoProvidedFilterSensorUnits: if no FilterSensorUnits are provided
         """
 
@@ -71,13 +92,25 @@ class MultispectralCameraModel:
         if not fs_units:
             raise NoProvidedFilterSensorUnits
 
+        if simulation_mode == SimulationMode.RADIANCE:
+            if not lightsource_spec:
+                raise ValueError("Missing LightSourceSpec")
+            if not isinstance(lightsource_spec, LightSourceSpec):
+                raise TypeError(f"Expected LightSourceSpec, got {type(lightsource_spec)}")
+
+            interpolated_lightsource_spec = interpolate_light_data(lightsource_spec, hs_data.band_centers)
+
+        else:
+            interpolated_lightsource_spec = None
+
         corrected_units = []
 
         for filter_sensor_unit in fs_units:
             corrected_units.append(
                 InterpolatedFilterSensorUnit.interpolate_to_hs_data(filter_sensor_unit, hs_data.band_centers))
 
-        return MultispectralCameraModel(hs_data, corrected_units, band_names)
+        return MultispectralCameraModel(hs_data, corrected_units, band_names, interpolated_lightsource_spec,
+                                        simulation_mode)
 
     def run_simulation(self) -> ImageData:
         """ Match filter_sensor_units specs with hs_data band_centers and calculate out_data 
@@ -116,12 +149,20 @@ class MultispectralCameraModel:
 
         logger.info("[MSModel] Calculating single band image from hyperspectral data...")
 
-        data_through_unit = self.hs_data.img_data * filter_sensor_unit.combined_response
+        if self.simulation_mode == SimulationMode.REFLECTANCE:
+            logger.info("[MSModel] Using reflectance simulation mode")
+            data_through_unit = self.hs_data.img_data * filter_sensor_unit.combined_response
+            filter_denominator = filter_sensor_unit.combined_response
+        elif self.simulation_mode == SimulationMode.RADIANCE:
+            logger.info("[MSModel] Using radiance simulation mode")
+            data_through_unit = self.hs_data.img_data * filter_sensor_unit.combined_response * self.lightsource_spec.irradiance[:,
+                                                                                                                                1]
+            filter_denominator = filter_sensor_unit.combined_response * self.lightsource_spec.irradiance[:, 1]
 
         logger.info("[MSModel] Performing trapezoidal integration...")
 
         signal_integral = np.trapezoid(data_through_unit, self.hs_data.band_centers, axis=2)
-        filter_integral = np.trapezoid(filter_sensor_unit.combined_response, self.hs_data.band_centers)
+        filter_integral = np.trapezoid(filter_denominator, self.hs_data.band_centers)
 
         out_img = signal_integral / filter_integral
 

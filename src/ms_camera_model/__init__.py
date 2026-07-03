@@ -20,8 +20,10 @@ from .image_data import (
     MultispectralImageData,
 )
 from .model import MultispectralCameraModel
+from .schemas.light import LightSourceSpec
 
 __all__ = [
     "data_comparison", "image_visualiser", "image_registrator", "FilterSensorUnit", "FilterSpecs", "SensorSpecs",
-    "HyperspectralImageData", "ImageData", "MultispectralImageData", "AreaLocation", "MultispectralCameraModel"
+    "HyperspectralImageData", "ImageData", "MultispectralImageData", "AreaLocation", "MultispectralCameraModel",
+    "LightSourceSpec"
 ]
