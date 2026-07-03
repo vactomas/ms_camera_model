@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+from pydantic import ValidationError
 
 from ms_camera_model import (
     AreaLocation,
@@ -30,6 +31,9 @@ from ms_camera_model.image_data import (
     MultispectralImageData,
 )
 from ms_camera_model.image_registrator import AkazeAlgorithm, register_bands
+from ms_camera_model.operations.interpolation import interpolate_light_data
+from ms_camera_model.schemas.enums import SimulationMode
+from ms_camera_model.schemas.light import LightSourceSpec
 
 
 class TestModel(unittest.TestCase):
@@ -203,6 +207,24 @@ class TestModel(unittest.TestCase):
         with self.assertRaises(NoProvidedFilterSensorUnits):
             MultispectralCameraModel.create_model(mock_hs_img_data, [], [])
 
+        with self.assertRaisesRegex(TypeError, "LightSourceSpec"):
+            MultispectralCameraModel.create_model(mock_hs_img_data, [filter_sensor_unit], ["a"], "s", "radiance")
+
+        with self.assertRaisesRegex(ValueError, "LightSourceSpec"):
+            MultispectralCameraModel.create_model(mock_hs_img_data, [filter_sensor_unit], ["a"], None, "radiance")
+
+        with self.assertRaisesRegex(TypeError, "InterpolatedFilterSensorUnit"):
+            MultispectralCameraModel(mock_hs_img_data, [filter_sensor_unit], ["a"])
+
+        MultispectralCameraModel.create_model(mock_hs_img_data, [filter_sensor_unit], ["a"])
+
+        test_lightsource_spec = LightSourceSpec(name="test", irradiance=np.array([[1, 1], [1, 1]]))
+        MultispectralCameraModel.create_model(mock_hs_img_data, [filter_sensor_unit], ["a"], test_lightsource_spec,
+                                              "radiance")
+
+        test_interpolated_fs_unit = InterpolatedFilterSensorUnit(filter_spec, sensor_spec, None)
+        MultispectralCameraModel.create_model(mock_hs_img_data, [test_interpolated_fs_unit], ["a"])
+
     def test_img_registrator(self):
         """ Test ImageRegistrator class """
         img_data = np.ones((2, 2, 2))
@@ -222,6 +244,28 @@ class TestModel(unittest.TestCase):
 
         with self.assertRaisesRegex(NoImageData, "reference_img.img_data"):
             register_bands(mock_hs_img_data_bad_img_data, mock_hs_img_data, AkazeAlgorithm())
+
+    def test_lightsource_spec(self):
+        """ Test LightSourceSpec class """
+
+        with self.assertRaises(ValidationError):
+            LightSourceSpec(name="test", irradiance=3)
+        with self.assertRaises(ValidationError):
+            LightSourceSpec(name="test", irradiance=np.array([1, 1]))
+
+        LightSourceSpec(name="test", irradiance=np.array([[1, 1], [1, 1]]))
+
+    def test_lightsource_interp(self):
+        """ Test interpolate_light_data """
+
+        test_spec = LightSourceSpec(name="test", irradiance=np.array([[1, 1], [1, 1]]))
+
+        with self.assertRaisesRegex(ValueError, "Missing band center data for interpolation"):
+            interpolate_light_data(test_spec, [])
+        with self.assertRaisesRegex(TypeError, "Band centers are not a list"):
+            interpolate_light_data(test_spec, "test")
+
+        interpolate_light_data(test_spec, [0.5, 1, 1.5, 2])
 
 
 if __name__ == "__main__":
